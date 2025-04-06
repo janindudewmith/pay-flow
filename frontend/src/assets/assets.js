@@ -6,12 +6,14 @@ import marking from "./marking.svg";
 import transport from "./transport.svg";
 import overtime from "./overtime.svg";
 import company_icon from "./company_icon.svg";
+import arrow_icon from "./arrow_icon.svg";
 import microsoft_logo from "./microsoft_logo.svg";
 import walmart_logo from "./walmart_logo.svg";
 import accenture_logo from "./accenture_logo.png";
 import profile_img from "./profile_img.png";
 import app_main_img from "./app_main_img.png";
 import cross_icon from './cross_icon.svg';
+import logo_dark from "./logo_dark.svg";
 import location_icon from './location_icon.svg';
 import money_icon from './money_icon.svg';
 import suitcase_icon from './suitcase_icon.svg';
@@ -50,11 +52,13 @@ export const assets = {
     cross_icon,
     upload_area,
     company_icon,
+    logo_dark,
     resume_not_selected,
     resume_selected,
     microsoft_logo,
     walmart_logo,
     accenture_logo,
+    arrow_icon,
     app_main_img,
     play_store,
     app_store,

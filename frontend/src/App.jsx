@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import RequestPayment from './pages/RequestPayment';
 import Requests from './pages/Requests';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
 const App = () => {
   return (
@@ -14,6 +15,7 @@ const App = () => {
         <Route path='/request-payment/:id' element={<RequestPayment />} />
         <Route path='/requests' element={<Requests />} />
       </Routes>
+      <Footer />
     </div>
   );
 };

@@ -1,126 +1,161 @@
-# Pay-Flow
+# PayFlow: Online Voucher Application Portal
 
-PayFlow is a comprehensive payment request management system designed for the Faculty of Engineering, University of Ruhuna. This application streamlines the process of submitting, approving, and tracking various payment requests.
+PayFlow is a comprehensive payment request management system designed for the Faculty of Engineering, University of Ruhuna. The system streamlines the submission, approval, and tracking of various payment requests for faculty members and administrators.
+
+## Project Overview
+
+PayFlow simplifies the process of managing academic-related payments through a centralized platform. The system offers multiple form types for different payment categories and an approval hierarchy involving department heads, deans, and the financial division. It ensures real-time tracking, notifications, and transparency throughout the request lifecycle.
+
+## Technology Stack
+
+### Frontend
+
+- React.js with functional components and hooks
+- Tailwind CSS for responsive and utility-first styling
+- Axios for API communication
+- React Router for navigation
+
+### Backend
+
+- Node.js with Express.js framework
+- MongoDB with Mongoose for NoSQL database management
+- dotenv for environment configuration
+
+### Authentication
+
+- Clerk for complete user management and authentication solution
 
 ## Features
 
-- Multiple payment request forms:
+### Academic Staff (Users)
+
+- Secure login and authentication via Clerk
+- Access to multiple payment request forms:
   - Petty Cash Reimbursement
   - Exam Duty Payment
   - Paper Marking Payment
   - Transportation Allowances
   - Overtime Payment
-  - and more
-- User authentication and authorization
-- Form submission and approval workflow
-- Dashboard for tracking request status
+- Form submission with necessary details
+- Real-time request tracking and status updates
+- Notifications for approvals or corrections
 
-## Technologies Used
+### Financial Division/Department Heads (Admins)
 
-# Frontend:
+- Dashboard with request overview and status filters
+- Multi-level approval workflow (Department Head > Financial Division)
+- Rejection with comments and correction requests
+- System-wide history of submitted and processed forms
 
-- React.js: A JavaScript library for building user interfaces
-- Tailwind CSS: A utility-first CSS framework for rapid UI development
-
-# Backend:
-
-- Node.js: JavaScript runtime for server-side development
-- Express.js: Web application framework for Node.js
-- MongoDB: NoSQL database for storing application data
-
-# Authentication:
-
-- Clerk: Complete user management and authentication solution
-
-## Getting Started
+## Installation and Setup
 
 ### Prerequisites
 
-- React.js
-- Tailwind CSS
-- Node.js
-- Express.js
-- npm
-- MongoDB
+- Node.js (v14+)
+- npm or yarn
+- MongoDB instance
+- Clerk account for authentication
 
-### Installation
+### Environment Variables
 
-1. Clone the repository
+Create `.env` files in both frontend and backend directories:
 
-   git clone https://github.com/your-username/pay-flow.git
+**Backend `.env`:**
 
-2. Navigate to the project directory
-
-   cd pay-flow
-
-3. Install dependencies
-
-# Install backend dependencies
-
-cd backend
-npm install
-
-# Install frontend dependencies
-
-cd ../frontend
-npm install
-
-4. Set up environment variables
-
-# In the frontend and backend directories, create .env files
-
-touch .env
-
-# Add the following to the .env file
-
+```
 PORT=5000
 MONGODB_URI=mongodb://localhost:27017/pay_flow
 CLERK_SECRET_KEY=your_clerk_secret_key
+```
 
-4. Start the development servers
+**Frontend `.env`:**
 
-# Start backend server
+```
+VITE_BACKEND_URL=http://localhost:5000
+```
 
-cd backend
-npm start
+### Installation Steps
 
-# In a new terminal, start frontend server
+1. Clone the repository:
 
-cd frontend
-npm run dev
+   ```bash
+   git clone https://github.com/your-username/pay-flow.git
+   cd pay-flow
+   ```
+
+2. Install backend dependencies:
+
+   ```bash
+   cd backend
+   npm install
+   ```
+
+3. Install frontend dependencies:
+
+   ```bash
+   cd ../frontend
+   npm install
+   ```
+
+4. Start the backend server:
+
+   ```bash
+   cd ../backend
+   npm start
+   ```
+
+5. Start the frontend development server:
+   ```bash
+   cd ../frontend
+   npm run dev
+   ```
 
 ## Project Structure
 
+```
 pay-flow/
 ├── backend/
-│ ├── config/
-│ │ └── db.js
-│ ├── controllers/
-│ │ ├── paymentController.js
-│ │ └── userController.js
-│ ├── middleware/
-│ │ ├── authMiddleware.js
-│ │ └── errorMiddleware.js
-│ ├── models/
-│ │ ├── paymentModel.js
-│ │ └── userModel.js
-│ ├── routes/
-│ │ ├── paymentRoutes.js
-│ │ └── userRoutes.js
-│ ├── utils/
-│ │ └── pdfGenerator.js
-│ ├── .env
-│ ├── package.json
-│ └── server.js
+│   ├── config/
+│   │   └── db.js
+│   ├── controllers/
+│   │   ├── paymentController.js
+│   │   └── userController.js
+│   ├── middleware/
+│   │   ├── authMiddleware.js
+│   │   └── errorMiddleware.js
+│   ├── models/
+│   │   ├── paymentModel.js
+│   │   └── userModel.js
+│   ├── routes/
+│   │   ├── paymentRoutes.js
+│   │   └── userRoutes.js
+│   ├── utils/
+│   │   └── pdfGenerator.js
+│   ├── .env
+│   ├── package.json
+│   └── server.js
+│
 ├── frontend/
-│ ├── public/
-│ ├── src/
-│ │ ├── assets/
-│ │ ├── components/
-│ │ ├── pages/
-│ │ ├── utils/
-│ │ ├── App.js
-│ │ └── index.js
-│ ├── .env
-│ └── package.json
+│   ├── public/
+│   ├── src/
+│   │   ├── assets/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── utils/
+│   │   ├── App.js
+│   │   └── index.js
+│   ├── .env
+│   └── package.json
+│
 └── README.md
+```
+
+## Future Enhancements
+
+- Email notifications for every status change
+- Role-based dashboard views
+- Exportable reports (PDF, Excel)
+- Real-time chat between user and finance division
+- Admin analytics dashboard for payment insights
+
+---

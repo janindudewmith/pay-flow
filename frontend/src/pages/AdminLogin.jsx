@@ -3,6 +3,19 @@ import { useNavigate, Link } from 'react-router-dom';
 import { assets } from '../assets/assets';
 
 const AdminLogin = () => {
+  const adminAccounts = [
+    {
+      email: import.meta.env.VITE_ADMIN1_EMAIL,
+      password: import.meta.env.VITE_ADMIN1_PASSWORD,
+      role: import.meta.env.VITE_ADMIN1_ROLE
+    },
+    {
+      email: import.meta.env.VITE_ADMIN2_EMAIL,
+      password: import.meta.env.VITE_ADMIN2_PASSWORD,
+      role: import.meta.env.VITE_ADMIN2_ROLE
+    }
+  ];
+
   const [role, setRole] = useState('department_head');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,34 +30,26 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      // Here you would integrate with your authentication system
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, role }),
-      });
+      const matchedAdmin = adminAccounts.find(
+        (admin) => admin.email === email && admin.password === password && admin.role === role
+      );
 
-      const data = await response.json();
+      if (matchedAdmin) {
+        // Simulate login token
+        localStorage.setItem('adminToken', 'dummy-token');
+        localStorage.setItem('adminRole', matchedAdmin.role);
 
-      if (data.success) {
-        localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminRole', role);
-
-        if (role === 'department_head') {
+        if (matchedAdmin.role === 'department_head') {
           navigate('/department-head-dashboard');
-        } else {
+        } else if (matchedAdmin.role === 'finance_officer') {
           navigate('/finance-officer-dashboard');
         }
       } else {
-        setError(data.message || 'Invalid credentials');
+        setError('Invalid credentials or role mismatch');
       }
     } catch (error) {
       setError('An error occurred. Please try again.');
       console.error('Login error:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -104,8 +109,8 @@ const AdminLogin = () => {
                   type="button"
                   onClick={() => setRole('department_head')}
                   className={`flex-1 py-2 px-4 rounded-md transition-colors ${role === 'department_head'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                 >
                   Department Head
@@ -114,8 +119,8 @@ const AdminLogin = () => {
                   type="button"
                   onClick={() => setRole('finance_officer')}
                   className={`flex-1 py-2 px-4 rounded-md transition-colors ${role === 'finance_officer'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                 >
                   Finance Officer

@@ -10,6 +10,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import FinanceDashboard from './pages/FinanceDashboard';
 import HeadDashboard from './pages/HeadDashboard';
+import PaymentDescriptionPage from './pages/PaymentDescription';
 
 const App = () => {
   return (
@@ -20,8 +21,9 @@ const App = () => {
         <Route path='/request-payment/:id' element={<RequestPayment />} />
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path='/requests' element={<Requests />} />
-        <Route path='/finance-dashboard' element={<FinanceDashboard />} />
-        <Route path='/head-dashboard' element={<HeadDashboard />} />
+        <Route path="/department-head-dashboard" element={<HeadDashboard />} />
+        <Route path="/finance-officer-dashboard" element={<FinanceDashboard />} />
+        <Route path="/payment-description/:paymentType" element={<PaymentDescriptionPage />} />
       </Routes>
       <Footer />
     </div>

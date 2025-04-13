@@ -8,12 +8,9 @@ export const AppContextProvider = (props) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const value = {
-    searchFilter,
-    setSearchFilter,
-    isSearched,
-    setIsSearched,
-    isLoggedIn,
-    setIsLoggedIn,
+    searchFilter, setSearchFilter,
+    isSearched, setIsSearched,
+    isLoggedIn, setIsLoggedIn,
   };
 
   return (

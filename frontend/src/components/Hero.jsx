@@ -10,6 +10,7 @@ const Hero = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [searchHistory, setSearchHistory] = useState([]);
+
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
@@ -45,6 +46,15 @@ const Hero = () => {
       keywords: ['overtime', 'extra', 'hours', 'additional', 'extended'],
       description: 'Request payment for extra hours worked'
     },
+  ];
+
+  // Payment options with images and links
+  const paymentOptions = [
+    { img: assets.petty_cash, link: '/request-payment/petty-cash', id: 'petty-cash' },
+    { img: assets.invigilator, link: '/request-payment/exam-duty', id: 'exam-duty' },
+    { img: assets.marking, link: '/request-payment/paper-marking', id: 'paper-marking' },
+    { img: assets.transport, link: '/request-payment/transportation', id: 'transportation' },
+    { img: assets.overtime, link: '/request-payment/overtime', id: 'overtime' },
   ];
 
   // Filter results based on search term
@@ -132,16 +142,13 @@ const Hero = () => {
     }
   };
 
-  const paymentOptions = [
-    { img: assets.petty_cash, link: '/request-payment/petty-cash' },
-    { img: assets.invigilator, link: '/request-payment/exam-duty' },
-    { img: assets.marking, link: '/request-payment/paper-marking' },
-    { img: assets.transport, link: '/request-payment/transportation' },
-    { img: assets.overtime, link: '/request-payment/overtime' },
-  ];
+  // Modified handleTileClick function to navigate to description page
+  const handleTileClick = (id) => {
+    navigate(`/payment-description/${id}`);
+  };
 
   return (
-    <div className="container 2xl:px-20 mx-auto my-10">
+    <div className="container 2xl:px-20 mx-auto my-7">
       <div className="bg-gradient-to-r from-blue-900 via-blue-750 to-blue-600 text-white py-16 text-center mx-2 rounded-xl">
         <h2 className="text-2xl md:text-3xl lg:text-5xl font-medium mb-4">Request Payments, Hassle Free</h2>
         <p className="mb-8 max-w-l mx-auto text-medium font-light px-5">
@@ -201,7 +208,6 @@ const Hero = () => {
                   <span>No search results found for "{searchTerm}"</span>
                 </div>
               )}
-
               {/* Recent Searches */}
               {searchHistory.length > 0 && (
                 <div className="border-t border-gray-200">
@@ -226,15 +232,31 @@ const Hero = () => {
           )}
         </div>
       </div>
-      <div className="border border-blue-200 hover:border-blue-300 shadow-lg mx-2 mt-8 p-8 rounded-lg bg-white transition-colors duration-200">
-        <p className="text-center text-lg font-medium mb-6">Take control of your faculty financials in everything including</p>
+      <div className="border-2 border-blue-200 hover:border-blue-300 shadow-lg mx-2 mt-7 p-8 rounded-lg bg-white transition-colors duration-200">
+        <p className="text-center text-lg font-medium mb-6 -mt-3 py-0 px-4 rounded-lg font-inter">
+          Take control of your faculty financials in everything including
+        </p>
+
+
+        {/* Grid view showing all tiles */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8 justify-items-center items-center max-w-7xl mx-auto">
           {paymentOptions.map((option, index) => (
-            <Link to={option.link} key={index} className="flex flex-col items-center transition-transform hover:scale-105 w-48">
-              <div className="border-2 border-gray-200 p-4 rounded-lg hover:border-blue-600 w-full flex justify-center">
-                <img className="h-16 md:h-20" src={option.img} alt="Payment Type" />
+            <div
+              key={index}
+              className="flex flex-col items-center w-full max-w-48 cursor-pointer group perspective-500"
+              onClick={() => handleTileClick(option.id)}
+            >
+              <div className="border border-blue-200 p-6 rounded-2xl w-full flex flex-col items-center justify-center bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:border-blue-400 relative overflow-hidden h-36 transform hover:-translate-y-1">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-blue-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <img
+                  className="h-16 md:h-20 relative z-10 transform group-hover:scale-110 transition-transform duration-300"
+                  src={option.img}
+                  alt={`${option.id} payment type`}
+                />
+
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </div>

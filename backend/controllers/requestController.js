@@ -2,6 +2,8 @@ import Request from '../models/requestModel.js';
 import User from '../models/userModel.js';
 import sendEmail from '../utils/emailService.js';
 
+
+
 // Submit new request
 const submitRequest = async (req, res) => {
   const { userEmail, formType, formData } = req.body;
@@ -274,10 +276,33 @@ const getPendingRequests = async (req, res) => {
   }
 };
 
-export {
-  submitRequest,
-  approveRequest,
-  rejectRequest,
-  getUserRequests,
-  getPendingRequests
+// controllers/requestController.js
+
+const getRequestById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const request = await Request.findById(id);
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found.' });
+    }
+    res.status(200).json({ success: true, request });
+  } catch (err) {
+    console.error('Error fetching request by ID:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch request',
+      error: err.message,
+    });
+  }
 };
+
+export { 
+  submitRequest, 
+  approveRequest, 
+  rejectRequest, 
+  getUserRequests, 
+  getPendingRequests, 
+  getRequestById 
+};
+
+

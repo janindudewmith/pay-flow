@@ -2,6 +2,8 @@ import OTP from '../models/otpModel.js';
 import generateOTP from '../utils/otpGenerator.js';
 import sendEmail from '../utils/emailService.js';
 
+
+
 // Send OTP to user's email
 const sendOTP = async (req, res) => {
   try {

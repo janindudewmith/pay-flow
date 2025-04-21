@@ -1,3 +1,6 @@
+import { getRequestById } from '../controllers/requestController.js';
+
+
 import express from 'express';
 import {
   submitRequest,

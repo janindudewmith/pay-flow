@@ -39,7 +39,7 @@ const PaymentDescription = () => {
       description: 'Academic staff involved in grading examination papers or assignments beyond their regular teaching load can claim additional compensation for this work.',
       features: [
         'Payment calculated per paper or script marked',
-        'Different rates for undergraduate and postgraduate assessments',
+        'Different rates for papers and assessments',
         'Batch processing for multiple marking assignments',
         'Verification by course coordinators'
       ],
@@ -112,8 +112,8 @@ const PaymentDescription = () => {
   const currentPaymentOption = paymentOptions.find(option => option.id === paymentType);
 
   return (
-    <div className="container 2xl:px-20 mx-auto my-10 ">
-      <div className="bg-white rounded-2xl border border-blue-200 shadow-md p-8 relative overflow-hidden">
+    <div className="container 2xl:px-20 mx-auto my-10">
+      <div className="bg-white rounded-2xl border-4 border-gray-200 shadow-md p-8 relative overflow-hidden">
         {/* Background pattern */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-32 -mt-32 opacity-30"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-50 rounded-full -ml-32 -mb-32 opacity-30"></div>
@@ -123,7 +123,7 @@ const PaymentDescription = () => {
           <div className="flex flex-col md:flex-row gap-8">
             {/* Left side - Payment type icon */}
             <div className="md:w-1/4 flex flex-col items-center">
-              <div className="border-2 border-blue-600 p-6 rounded-2xl w-full max-w-48 flex justify-center bg-gradient-to-br from-blue-200 via-blue-100 to-transpa relative overflow-hidden">
+              <div className="border border-blue-600 p-6 rounded-2xl w-full max-w-48 flex justify-center bg-gradient-to-br from-blue-400 via-blue-200 to-transparent relative overflow-hidden">
                 <img
                   className="h-24 hover:scale-110 transition-transform duration-300 transform"
                   src={currentPaymentOption?.img}
@@ -157,7 +157,7 @@ const PaymentDescription = () => {
               <h3 className="text-2xl font-bold text-blue-800 mb-4 relative pb-2 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-16 after:h-1 after:bg-blue-600 after:rounded-full">{paymentDetails.title}</h3>
               <p className="text-base text-gray-700 mb-6 leading-relaxed">{paymentDetails.description}</p>
 
-              <div className="bg-blue-50 p-6 rounded-xl mb-6 border-l-4 border-blue-500 backdrop-blur-sm bg-opacity-70">
+              <div className="bg-blue-100 p-6 rounded-xl mb-6 border-l-4 border-blue-500 backdrop-blur-sm bg-opacity-70">
                 <h4 className="text-lg font-semibold text-blue-700 mb-3 flex items-center">
                   <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>

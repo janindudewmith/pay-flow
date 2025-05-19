@@ -75,7 +75,7 @@ const Navbar = ({ title }) => {
             {user && !isAdminLoginPage && (
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap group"
+                className="bg-gradient-to-r from-blue-900 to-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap group"
               >
                 <span>Request New Payment</span>
                 <svg

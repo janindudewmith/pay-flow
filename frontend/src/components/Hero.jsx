@@ -236,8 +236,6 @@ const Hero = () => {
         <p className="text-center text-lg font-medium mb-6 -mt-3 py-0 px-4 rounded-lg font-inter">
           Take control of your faculty financials in everything including
         </p>
-
-
         {/* Grid view showing all tiles */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8 justify-items-center items-center max-w-7xl mx-auto">
           {paymentOptions.map((option, index) => (
@@ -247,16 +245,16 @@ const Hero = () => {
               onClick={() => handleTileClick(option.id)}
             >
               <div className="border border-blue-200 p-6 rounded-2xl w-full flex flex-col items-center justify-center bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:border-blue-400 relative overflow-hidden h-36 transform hover:-translate-y-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-blue-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-200 via-blue-100 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <img
                   className="h-16 md:h-20 relative z-10 transform group-hover:scale-110 transition-transform duration-300"
                   src={option.img}
                   alt={`${option.id} payment type`}
                 />
-
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
               </div>
             </div>
+            
           ))}
         </div>
       </div>

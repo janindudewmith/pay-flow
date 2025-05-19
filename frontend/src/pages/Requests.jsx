@@ -60,7 +60,7 @@ const Requests = () => {
   // };
 
   return (
-      <div className="container 2xl:px-20 mx-auto my-10">
+      <div className="container 2xl:px-20 mx-auto my-8">
       <div className="bg-gradient-to-r from-blue-900 via-blue-750 to-blue-600 text-white py-8 px-6 rounded-xl mb-6">
         <h2 className="text-2xl md:text-3xl font-medium">My Payment Requests</h2>
         <p className="text-sm text-white/80 mt-2">

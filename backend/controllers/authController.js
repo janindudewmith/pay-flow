@@ -1,83 +1,69 @@
-import OTP from '../models/otpModel.js';
-import generateOTP from '../utils/otpGenerator.js';
-import sendEmail from '../utils/emailService.js';
+import OTP from '../models/OTP.js';
+import { sendOTP } from '../services/emailService.js';
 
-// Send OTP to user's email
-const sendOTP = async (req, res) => {
+// Send OTP for authentication
+export const sendAuthOTP = async (req, res) => {
   try {
     const { email } = req.body;
-    
-    // Generate a new OTP
-    const otp = generateOTP();
-    
-    // Store OTP in database (replace if exists)
-    await OTP.findOneAndDelete({ email });
-    await OTP.create({ email, otp });
-    
-    // Send OTP via email
-    await sendEmail(
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Save OTP to database
+    await OTP.create({
       email,
-      'Your Verification OTP for PayFlow',
-      `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-        <h2 style="color: #3b82f6;">PayFlow Verification</h2>
-        <p>Your One-Time Password (OTP) for verification is:</p>
-        <h1 style="font-size: 32px; letter-spacing: 5px; text-align: center; margin: 20px 0; padding: 10px; background-color: #f0f9ff; border-radius: 4px; color: #1e40af;">${otp}</h1>
-        <p>This OTP is valid for 5 minutes and can be used only once.</p>
-        <p>If you didn't request this OTP, please ignore this email.</p>
-        <p style="margin-top: 20px; font-size: 12px; color: #6b7280;">© ${new Date().getFullYear()} PayFlow. All rights reserved.</p>
-      </div>`
-    );
-    
-    res.status(200).json({ 
-      success: true, 
-      message: 'OTP sent successfully' 
+      otp,
+      purpose: 'authentication',
+    });
+
+    // Send OTP via email
+    await sendOTP(email, otp, 'authentication');
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP sent successfully',
     });
   } catch (error) {
-    console.error('Error sending OTP:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to send OTP' 
+    res.status(500).json({
+      success: false,
+      message: 'Error sending OTP',
+      error: error.message,
     });
   }
 };
 
-// Verify OTP entered by user
-const verifyOTP = async (req, res) => {
+// Verify OTP for authentication
+export const verifyAuthOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    
-    // Find the stored OTP
-    const otpRecord = await OTP.findOne({ email });
-    
+
+    // Find the OTP in database
+    const otpRecord = await OTP.findOne({
+      email,
+      otp,
+      purpose: 'authentication',
+      createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) }, // OTP not expired (5 minutes)
+    });
+
     if (!otpRecord) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'OTP not found or expired' 
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP',
       });
     }
-    
-    // Verify OTP
-    if (otpRecord.otp !== otp) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Invalid OTP' 
-      });
-    }
-    
+
     // Delete the used OTP
-    await OTP.findOneAndDelete({ email });
-    
-    res.status(200).json({ 
-      success: true, 
-      message: 'OTP verified successfully' 
+    await OTP.deleteOne({ _id: otpRecord._id });
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP verified successfully',
     });
   } catch (error) {
-    console.error('Error verifying OTP:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to verify OTP' 
+    res.status(500).json({
+      success: false,
+      message: 'Error verifying OTP',
+      error: error.message,
     });
   }
 };
-
-export { sendOTP, verifyOTP };

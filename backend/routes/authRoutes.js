@@ -1,9 +1,13 @@
 import express from 'express';
-import { sendOTP, verifyOTP } from '../controllers/authController.js';
+import { sendAuthOTP, verifyAuthOTP } from '../controllers/authController.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.post('/send-otp', sendOTP);
-router.post('/verify-otp', verifyOTP);
+// Send OTP for authentication
+router.post('/send-otp', authMiddleware, sendAuthOTP);
+
+// Verify OTP for authentication
+router.post('/verify-otp', authMiddleware, verifyAuthOTP);
 
 export default router;

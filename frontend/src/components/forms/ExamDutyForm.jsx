@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 
 const ExamDutyForm = () => {
   // Basic Information State
@@ -109,9 +110,32 @@ const ExamDutyForm = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission
+    setIsLoading(true);
+    setSubmitStatus({ message: '', type: '' });
+
+    try {
+      const response = await axios.post('/api/payments/submit', {
+        formType: 'exam_duty',
+        submittedBy: {
+          userId: user.id,
+          email: user.primaryEmailAddress?.emailAddress,
+          fullName: user.fullName,
+        },
+        formData: { basicInfo, examDetails, totals },
+        totalAmount: totals.totalAmount,
+      });
+
+      if (response.status === 201) {
+        setSubmitStatus({ message: 'Request submitted successfully!', type: 'success' });
+        // Reset form or redirect
+      }
+    } catch (error) {
+      setSubmitStatus({ message: error.response?.data?.message || 'Submission failed', type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

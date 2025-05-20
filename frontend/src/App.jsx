@@ -11,11 +11,13 @@ import { ToastContainer } from 'react-toastify';
 import FinanceDashboard from './pages/FinanceDashboard';
 import HeadDashboard from './pages/HeadDashboard';
 import PaymentDescriptionPage from './pages/PaymentDescription';
+import UserProfile from './components/UserProfile';
 
 const App = () => {
   return (
     <div>
       <Navbar />
+      <UserProfile />
       <Routes>
         <Route path='/' element={<Home />} />
         <Route path='/request-payment/:id' element={<RequestPayment />} />

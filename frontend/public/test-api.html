@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 5px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>API Test Page</h1>
+    
+    <div>
+        <button id="testUserCreate">Test User Create</button>
+        <button id="testGetUsers">Test Get Users</button>
+    </div>
+    
+    <h2>Response:</h2>
+    <pre id="response">No response yet</pre>
+    
+    <script>
+        document.getElementById('testUserCreate').addEventListener('click', async () => {
+            const responseEl = document.getElementById('response');
+            responseEl.textContent = 'Loading...';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/users/create-update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        clerkId: 'test-' + Date.now(),
+                        email: 'test@example.com',
+                        fullName: 'Test User',
+                        firstName: 'Test',
+                        lastName: 'User'
+                    })
+                });
+                
+                const data = await response.json();
+                responseEl.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                responseEl.textContent = 'Error: ' + error.message;
+            }
+        });
+        
+        document.getElementById('testGetUsers').addEventListener('click', async () => {
+            const responseEl = document.getElementById('response');
+            responseEl.textContent = 'Loading...';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/users', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                responseEl.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                responseEl.textContent = 'Error: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -24,4 +24,10 @@ router.get('/updates', authMiddleware, (req, res) => {
   });
 });
 
+// SSE connection endpoint
+router.get('/connect', authMiddleware, (req, res) => {
+  const userId = req.user.id;
+  websocketService.addClient(userId, res);
+});
+
 export default router; 

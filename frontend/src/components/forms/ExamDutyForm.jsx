@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
+import { useUser, useAuth } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const ExamDutyForm = () => {
+  const { user } = useUser();
+  const { getToken } = useAuth();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState({ message: '', type: '' });
+
   // Basic Information State
   const [basicInfo, setBasicInfo] = useState({
-    officerName: '',
+    officerName: user?.fullName || '',
     position: '',
     department: '',
     bankAccount: '',
@@ -12,7 +20,7 @@ const ExamDutyForm = () => {
     branch: '',
     venue: '',
     numberOfCandidates: '',
-    requestingOfficerDate: '',
+    requestingOfficerDate: new Date().toISOString().split('T')[0],
     examCoordinatorDate: '',
     headOfDepartmentDate: '',
     financeOfficerDate: '',
@@ -116,23 +124,68 @@ const ExamDutyForm = () => {
     setSubmitStatus({ message: '', type: '' });
 
     try {
-      const response = await axios.post('/api/payments/submit', {
-        formType: 'exam_duty',
-        submittedBy: {
-          userId: user.id,
-          email: user.primaryEmailAddress?.emailAddress,
-          fullName: user.fullName,
+      console.log('Getting authenticated API instance...');
+
+      // Get token directly from Clerk
+      const token = await getToken();
+      console.log('Token from useAuth hook:', token ? 'Received (first 10 chars: ' + token.substring(0, 10) + '...)' : 'Not received');
+
+      // Include user information in the request
+      const userData = {
+        email: user?.primaryEmailAddress?.emailAddress,
+        fullName: user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
+      };
+
+      // Create a direct axios instance with the token
+      const response = await axios({
+        method: 'post',
+        url: 'http://localhost:5000/api/forms/submit',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        formData: { basicInfo, examDetails, totals },
-        totalAmount: totals.totalAmount,
+        data: {
+          formType: 'exam_duty',
+          formData: { basicInfo, examDetails, totals },
+          email: userData.email,
+          fullName: userData.fullName
+        }
       });
 
-      if (response.status === 201) {
-        setSubmitStatus({ message: 'Request submitted successfully!', type: 'success' });
-        // Reset form or redirect
+      console.log('Form submission response:', response.data);
+
+      if (response.data.success) {
+        setSubmitStatus({
+          message: 'Request submitted successfully!',
+          type: 'success'
+        });
+        alert('Form submitted successfully!');
+        navigate('/my-requests');
+      } else {
+        setSubmitStatus({
+          message: response.data.message || 'Submission failed',
+          type: 'error'
+        });
+        alert(response.data.message || 'Error submitting form. Please try again.');
       }
     } catch (error) {
-      setSubmitStatus({ message: error.response?.data?.message || 'Submission failed', type: 'error' });
+      console.error('Error submitting form:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL
+      });
+
+      setSubmitStatus({
+        message: error.response?.data?.message || 'Submission failed',
+        type: 'error'
+      });
+      const errorMessage = error.response?.data?.message ||
+        error.message ||
+        'Error submitting form. Please try again.';
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }

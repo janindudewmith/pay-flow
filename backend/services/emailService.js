@@ -1,53 +1,123 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import OTP from '../models/OTP.js';
 
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
+    pass: process.env.EMAIL_PASSWORD
+  }
 });
 
-export const sendOTP = async (email, otp, purpose) => {
-  const subject = purpose === 'form_submission'
-    ? 'OTP for Form Submission'
-    : purpose === 'approval'
-      ? 'OTP for Form Approval'
-      : 'OTP for Form Rejection';
-
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject,
-    html: `
-      <h1>Your OTP for ${subject}</h1>
-      <p>Your OTP is: <strong>${otp}</strong></p>
-      <p>This OTP will expire in 5 minutes.</p>
-    `,
+// Helper function to get department head email
+const getHodEmail = (department) => {
+  const departmentMap = {
+    'eie': process.env.HOD_EIE,
+    'cee': process.env.HOD_CEE,
+    'mme': process.env.HOD_MME
   };
-
-  await transporter.sendMail(mailOptions);
+  return departmentMap[department] || null;
 };
 
-export const sendFormNotification = async (email, formType, status, formId) => {
-  const subject = `Form ${status} - ${formType}`;
+// Send OTP
+export const sendOTP = async (email, purpose, formId) => {
+  try {
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject,
-    html: `
-      <h1>Form ${status}</h1>
-      <p>A ${formType} form has been ${status} and requires your attention.</p>
-      <p>Please log in to your dashboard to review the form.</p>
-      <p>Form ID: ${formId}</p>
-    `,
-  };
+    // Save OTP to database
+    await OTP.create({
+      email,
+      otp,
+      purpose,
+      formId
+    });
 
-  await transporter.sendMail(mailOptions);
+    // Send email
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: email,
+      subject: 'OTP Verification',
+      html: `
+        <h1>OTP Verification</h1>
+        <p>Your OTP for ${purpose} is: <strong>${otp}</strong></p>
+        <p>This OTP will expire in 5 minutes.</p>
+      `
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    throw error;
+  }
+};
+
+// Send form notification
+export const sendFormNotification = async (email, type, form) => {
+  try {
+    let subject, html;
+
+    switch (type) {
+      case 'new_form_submission':
+        subject = 'New Form Submission';
+        html = `
+          <h1>New Form Submission</h1>
+          <p>A new ${form.formType} form has been submitted for your approval.</p>
+          <p>Submitted by: ${form.submittedBy.fullName}</p>
+          <p>Department: ${form.submittedBy.department}</p>
+          <p>Please log in to review the form.</p>
+        `;
+        break;
+
+      case 'form_approved_by_hod':
+        subject = 'Form Approved by Department Head';
+        html = `
+          <h1>Form Approved by Department Head</h1>
+          <p>The ${form.formType} form has been approved by the department head.</p>
+          <p>Please log in to review and take necessary action.</p>
+        `;
+        break;
+
+      case 'form_approved_by_finance':
+        subject = 'Form Approved by Finance';
+        html = `
+          <h1>Form Approved</h1>
+          <p>Your ${form.formType} form has been approved by the finance department.</p>
+          <p>Thank you for using our system.</p>
+        `;
+        break;
+
+      case 'form_rejected':
+        subject = 'Form Rejected';
+        html = `
+          <h1>Form Rejected</h1>
+          <p>Your ${form.formType} form has been rejected.</p>
+          <p>Reason: ${form.rejectionDetails.reason}</p>
+          <p>Stage: ${form.rejectionDetails.stage}</p>
+        `;
+        break;
+
+      default:
+        throw new Error('Invalid notification type');
+    }
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: email,
+      subject,
+      html
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error sending notification:', error);
+    throw error;
+  }
 };
 
 export const sendRejectionNotification = async (email, formType, reason) => {

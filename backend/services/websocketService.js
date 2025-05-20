@@ -8,11 +8,20 @@ class WebSocketService extends EventEmitter {
 
   // Add a new client
   addClient(userId, res) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    // Send initial connection message
+    res.write(`data: ${JSON.stringify({ type: 'connected', message: 'Connected to server' })}\n\n`);
+
+    // Store the client
     this.clients.set(userId, res);
 
     // Remove client when connection closes
     res.on('close', () => {
       this.clients.delete(userId);
+      console.log(`Client disconnected: ${userId}`);
     });
   }
 

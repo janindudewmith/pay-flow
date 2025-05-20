@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
+import { useUser, useAuth } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const PaperMarkingForm = () => {
+  const { user } = useUser();
+  const { getToken } = useAuth();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState({ message: '', type: '' });
+
   const [examination, setExamination] = useState('');
   const [subject, setSubject] = useState('');
   const [examinerName, setExaminerName] = useState('');
@@ -23,6 +32,21 @@ const PaperMarkingForm = () => {
   const [subjectClerkDate, setSubjectClerkDate] = useState('');
   const [financeOfficerDate, setFinanceOfficerDate] = useState('');
   const [financeVoucherNo, setFinanceVoucherNo] = useState('');
+
+  // Basic Information State
+  const [basicInfo, setBasicInfo] = useState({
+    examinerName: user?.fullName || '',
+    position: '',
+    department: '',
+    examination: '',
+    subject: '',
+    upfNo: '',
+    address: '',
+    requestingOfficerDate: new Date().toISOString().split('T')[0],
+    headOfDepartmentDate: '',
+    financeOfficerDate: '',
+    voucherNo: ''
+  });
 
   const handlePaperDetailChange = (index, field, value) => {
     const newPaperDetails = [...paperDetails];
@@ -50,9 +74,91 @@ const PaperMarkingForm = () => {
     return (totalPaperAmount + totalMarkingAmount + totalPracticalAmount).toFixed(2);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission logic here
+    setIsLoading(true);
+    setSubmitStatus({ message: '', type: '' });
+
+    try {
+      console.log('Getting authenticated API instance...');
+
+      // Get token directly from Clerk
+      const token = await getToken();
+      console.log('Token from useAuth hook:', token ? 'Received (first 10 chars: ' + token.substring(0, 10) + '...)' : 'Not received');
+
+      // Include user information in the request
+      const userData = {
+        email: user?.primaryEmailAddress?.emailAddress,
+        fullName: user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
+      };
+
+      // Prepare form data
+      const formData = {
+        basicInfo: {
+          ...basicInfo,
+          examinerName: examinerName || user?.fullName || '',
+          examination,
+          subject,
+          upfNo,
+          address
+        },
+        paperDetails,
+        markingDetails,
+        practicalDetails,
+        totalAmount: calculateTotal()
+      };
+
+      // Create a direct axios instance with the token
+      const response = await axios({
+        method: 'post',
+        url: 'http://localhost:5000/api/forms/submit',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        data: {
+          formType: 'paper_marking',
+          formData,
+          email: userData.email,
+          fullName: userData.fullName
+        }
+      });
+
+      console.log('Form submission response:', response.data);
+
+      if (response.data.success) {
+        setSubmitStatus({
+          message: 'Request submitted successfully!',
+          type: 'success'
+        });
+        alert('Form submitted successfully!');
+        navigate('/my-requests');
+      } else {
+        setSubmitStatus({
+          message: response.data.message || 'Submission failed',
+          type: 'error'
+        });
+        alert(response.data.message || 'Error submitting form. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+
+      setSubmitStatus({
+        message: error.response?.data?.message || 'Submission failed',
+        type: 'error'
+      });
+      const errorMessage = error.response?.data?.message ||
+        error.message ||
+        'Error submitting form. Please try again.';
+      alert(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -1,5 +1,7 @@
 import Request from '../models/requestModel.js';
 import { sendOTP, sendFormNotification, sendRejectionNotification } from '../services/emailService.js';
+import Form from '../models/Form.js';
+//import websocketService from '../services/websocketService.js';
 
 // Helper functions
 const getDepartmentCodeFromEmail = (email) => {
@@ -272,6 +274,56 @@ export const getRequests = async (req, res) => {
   } catch (error) {
     console.error('Error fetching requests:', error);
     res.status(500).json({ message: 'Server error fetching requests', error: error.message });
+  }
+};
+
+// Submit form
+export const submitForm = async (req, res) => {
+  try {
+    const { formType, formData, userId } = req.body;
+    const user = req.user; // From Clerk auth
+
+    if (!user || !user.id || !user.email) {
+      return res.status(401).json({
+        success: false,
+        message: 'User information is missing'
+      });
+    }
+
+    // Create form in database
+    const form = await Form.create({
+      formType,
+      formData,
+      submittedBy: {
+        userId: user.id,
+        email: user.email,
+        fullName: user.fullName || `${user.firstName} ${user.lastName}`.trim(),
+        department: user.department || 'unknown'
+      },
+      status: 'pending_hod_approval'
+    });
+
+    console.log('Form created successfully:', form._id);
+
+    // Send real-time update
+    websocketService.sendUpdate(user.id, {
+      type: 'form_submitted',
+      message: 'Your form has been submitted successfully',
+      formId: form._id
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Form submitted successfully',
+      formId: form._id
+    });
+  } catch (error) {
+    console.error('Error submitting form:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error submitting form',
+      error: error.message
+    });
   }
 };
 

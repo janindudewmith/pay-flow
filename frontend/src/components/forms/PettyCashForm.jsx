@@ -1,23 +1,31 @@
 import React, { useState } from 'react';
+import { useUser, useAuth } from '@clerk/clerk-react';
+import axios from 'axios';
+import { getApiWithToken } from '../../utils/axios';
+import { useNavigate } from 'react-router-dom';
+import { generateFormPdf } from '../../utils/pdfUtils';
 
 const PettyCashForm = () => {
+  const { user } = useUser();
+  const { getToken } = useAuth();
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [basicInfo, setBasicInfo] = useState({
-    requestorName: '',
+    requestorName: user?.fullName || '',
     position: '',
     department: '',
-    dateRequested: '',
+    dateRequested: new Date().toISOString().split('T')[0],
     amountRs: '',
     amountCts: '',
     reasonForRequest: '',
     expectedSpendingDate: '',
     declarationAmount: '',
-    requestingOfficerDate: '',
+    requestingOfficerDate: new Date().toISOString().split('T')[0],
     departmentHeadDate: '',
     costCenter: '',
     financeDate: '',
     voucherNo: ''
   });
-
 
   const handleBasicInfoChange = (e) => {
     const { name, value } = e.target;
@@ -27,9 +35,102 @@ const PettyCashForm = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission
+
+    // Validate required fields
+    const requiredFields = [
+      'requestorName', 'position', 'department', 'amountRs',
+      'amountCts', 'reasonForRequest', 'expectedSpendingDate'
+    ];
+
+    const missingFields = requiredFields.filter(field => !basicInfo[field]);
+
+    if (missingFields.length > 0) {
+      alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      console.log('Getting authenticated API instance...');
+
+      // Get token directly from Clerk
+      const token = await getToken();
+      console.log('Token from useAuth hook:', token ? 'Received (first 10 chars: ' + token.substring(0, 10) + '...)' : 'Not received');
+
+      // Include user information in the request
+      const userData = {
+        email: user?.primaryEmailAddress?.emailAddress,
+        fullName: user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
+      };
+
+      // Create a direct axios instance with the token
+      const response = await axios({
+        method: 'post',
+        url: 'http://localhost:5000/api/forms/submit',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        data: {
+          formType: 'petty_cash',
+          formData: basicInfo,
+          email: userData.email,
+          fullName: userData.fullName
+        }
+      });
+
+      console.log('Form submission response:', response.data);
+
+      if (response.data.success) {
+        alert('Form submitted successfully!');
+        navigate('/my-requests');
+      } else {
+        alert(response.data.message || 'Error submitting form. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL
+      });
+
+      const errorMessage = error.response?.data?.message ||
+        error.message ||
+        'Error submitting form. Please try again.';
+      alert(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      // Show loading state
+      alert('Generating PDF...');
+
+      // Get token from Clerk
+      const token = await getToken();
+
+      // Use the utility function to generate PDF
+      await generateFormPdf(
+        basicInfo,
+        'petty_cash',
+        {
+          fullName: user?.fullName || '',
+          email: user?.primaryEmailAddress?.emailAddress || ''
+        },
+        token
+      );
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    }
   };
 
   return (
@@ -257,7 +358,7 @@ const PettyCashForm = () => {
           <button
             type="button"
             className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 flex items-center gap-2"
-            onClick={() => alert('Downloading PDF...')}
+            onClick={handleDownloadPDF}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -268,8 +369,9 @@ const PettyCashForm = () => {
           <button
             type="submit"
             className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+            disabled={isSubmitting}
           >
-            Submit Request
+            {isSubmitting ? 'Submitting...' : 'Submit Request'}
           </button>
         </div>
       </form>

@@ -1,0 +1,41 @@
+# Node.js
+node_modules/
+*/node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Environment variables
+.env
+*/.env
+
+# Build files
+dist/
+build/
+*/dist/
+*/build/
+
+# Temporary files
+tmp/
+temp/
+*/temp/
+
+# Debug files
+*.log
+logs/
+*/logs/
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db 

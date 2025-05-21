@@ -25,6 +25,7 @@ const getHodEmail = (department) => {
 // Send OTP
 export const sendOTP = async (email, purpose, formId) => {
   try {
+    console.log('Sending OTP to:', email);
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 

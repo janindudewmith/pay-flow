@@ -4,11 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { generateFormPdf } from '../../utils/pdfUtils';
 
-const TransportForm = () => {
+const TransportForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
   const { user } = useUser();
   const { getToken } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({ message: '', type: '' });
 
   const [requestingOfficerDate, setRequestingOfficerDate] = useState('');
@@ -530,23 +529,28 @@ const TransportForm = () => {
 
         {/* Buttons Section */}
         <div className="mt-6 flex justify-start gap-4">
-          <button
-            type="button"
-            className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 flex items-center gap-2"
-            onClick={handleDownloadPDF}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            Download PDF
-          </button>
+          {otpVerified && (
+            <button
+              type="button"
+              className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 flex items-center gap-2"
+              onClick={handleDownloadPDF}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              Download PDF
+            </button>
+          )}
 
           <button
-            type="submit"
-            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+            type="button"
+            onClick={handleSendOtp}
+            disabled={otpSent || isLoading}
+            className="bg-blue-600 text-white px-4 py-2 rounded mr-2"
           >
-            Submit Request
+            {isLoading ? 'Sending...' : otpSent ? 'OTP Sent' : 'Send OTP'}
           </button>
+
         </div>
 
       </form>

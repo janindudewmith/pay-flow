@@ -223,6 +223,7 @@ const generateHtmlContent = (formData, formType, user) => {
  * Generate HTML content for Petty Cash form
  */
 const generatePettyCashContent = (formData) => {
+  // Extract data from the nested structure
   const data = formData.basicInfo || formData;
 
   return `
@@ -275,6 +276,7 @@ const generatePettyCashContent = (formData) => {
  * Generate HTML content for Exam Duty form
  */
 const generateExamDutyContent = (formData) => {
+  // Extract data from the nested structure
   const basicInfo = formData.basicInfo || {};
   const examDetails = formData.examDetails || [];
   const totals = formData.totals || {};
@@ -404,6 +406,7 @@ const generateExamDutyContent = (formData) => {
  * Generate HTML content for Transport form
  */
 const generateTransportContent = (formData) => {
+  // Extract data from the nested structure
   const data = formData.basicInfo || formData;
   const journeyDetails = formData.journeyDetails || [];
 
@@ -506,6 +509,7 @@ const generateTransportContent = (formData) => {
  * Generate HTML content for Paper Marking form
  */
 const generatePaperMarkingContent = (formData) => {
+  // Extract data from the nested structure
   const basicInfo = formData.basicInfo || {};
   const paperDetails = formData.paperDetails || [];
   const markingDetails = formData.markingDetails || {};
@@ -620,6 +624,7 @@ const generatePaperMarkingContent = (formData) => {
  * Generate HTML content for Overtime form
  */
 const generateOvertimeContent = (formData) => {
+  // Extract data from the nested structure
   const basicInfo = formData.basicInfo || {};
   const overtimeDetails = formData.overtimeDetails || [];
   const totalAmount = formData.totalAmount || 0;

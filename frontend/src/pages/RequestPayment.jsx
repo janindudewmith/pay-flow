@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import PettyCashForm from '../components/forms/PettyCashForm';
 import ExamDutyForm from '../components/forms/ExamDutyForm';
 import PaperMarkingForm from '../components/forms/PaperMarkingForm';
@@ -7,6 +7,7 @@ import TransportForm from '../components/forms/TransportForm';
 import OvertimeForm from '../components/forms/OvertimeForm';
 import axios from 'axios';
 import { useUser, useAuth } from '@clerk/clerk-react';
+import { generateFormPdf } from '../utils/pdfUtils';
 
 const RequestPayment = () => {
   const { id } = useParams();
@@ -18,6 +19,9 @@ const RequestPayment = () => {
   const [formData, setFormData] = useState({});
   const [otpMessage, setOtpMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [submittedFormData, setSubmittedFormData] = useState(null);
+  const navigate = useNavigate();
 
   // Get user email and full name from Clerk
   const email = user?.primaryEmailAddress?.emailAddress || '';
@@ -129,40 +133,30 @@ const RequestPayment = () => {
       alert('Please verify OTP first');
       return;
     }
-
     try {
       setIsLoading(true);
       const token = await getToken();
-
-      // Submit the form
-      const response = await axios.post('http://localhost:5000/api/forms/submit', 
-        {
-          formType: id,
-          formData,
-          email,
-          fullName,
-          otp // Include OTP in the submission
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+      const response = await axios.post('http://localhost:5000/api/forms/submit', {
+        formType: id,
+        formData,
+        email,
+        fullName,
+        otp
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      );
+      });
 
       if (response.data.success) {
-        alert('Form submitted successfully!');
-        // Reset form state
-        setOtp('');
-        setOtpSent(false);
-        setOtpVerified(false);
-        setFormData({});
+        setShowSuccessModal(true);
+        setSubmittedFormData(formData); // Save for PDF download
+        // Reset form state if needed
       } else {
         alert(response.data.message || 'Failed to submit form. Please try again.');
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
       alert(error.response?.data?.message || 'Failed to submit form. Please try again.');
     } finally {
       setIsLoading(false);
@@ -209,6 +203,39 @@ const RequestPayment = () => {
           </div>
         </div>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg text-center">
+            <h2 className="text-2xl font-bold mb-4 text-blue-700">Form Submitted Successfully!</h2>
+            <p className="mb-6">You can now download your submitted form as a PDF.</p>
+            <button
+              className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
+              onClick={async () => {
+                const token = await getToken();
+                await generateFormPdf(
+                  submittedFormData,
+                  id,
+                  { fullName, email },
+                  token
+                );
+              }}
+            >
+              Download PDF
+            </button>
+            <button
+              className="ml-4 px-4 py-2 rounded border border-gray-400"
+              onClick={() => {
+                setShowSuccessModal(false);
+                navigate('/');
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

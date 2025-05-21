@@ -76,7 +76,9 @@ const PettyCashForm = ({ setFormData, handleSendOtp, otpSent, isLoading, otpVeri
         },
         data: {
           formType: 'petty_cash',
-          formData: basicInfo,
+          formData: {
+            basicInfo: basicInfo
+          },
           email: userData.email,
           fullName: userData.fullName
         }
@@ -119,7 +121,9 @@ const PettyCashForm = ({ setFormData, handleSendOtp, otpSent, isLoading, otpVeri
 
       // Use the utility function to generate PDF
       await generateFormPdf(
-        basicInfo,
+        {
+          basicInfo: basicInfo
+        },
         'petty_cash',
         {
           fullName: user?.fullName || '',

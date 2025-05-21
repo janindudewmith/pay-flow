@@ -134,7 +134,10 @@ const TransportForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
         },
         data: {
           formType: 'transport',
-          formData: { basicInfo, travelDetails, totals },
+          formData: {
+            basicInfo: basicInfo,
+            journeyDetails: travelDetails
+          },
           email: userData.email,
           fullName: userData.fullName
         }
@@ -187,8 +190,8 @@ const TransportForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
       
       // Prepare form data for PDF
       const formData = {
-        basicInfo,
-        travelDetails
+        basicInfo: basicInfo,
+        journeyDetails: travelDetails
       };
       
       // Use the utility function to generate PDF

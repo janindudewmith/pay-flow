@@ -116,7 +116,20 @@ const PaperMarkingForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) =>
         },
         data: {
           formType: 'paper_marking',
-          formData,
+          formData: {
+            basicInfo: {
+              ...basicInfo,
+              examinerName: examinerName || user?.fullName || '',
+              examination,
+              subject,
+              upfNo,
+              address
+            },
+            paperDetails,
+            markingDetails,
+            practicalDetails,
+            totalAmount: calculateTotal()
+          },
           email: userData.email,
           fullName: userData.fullName
         }
@@ -154,6 +167,46 @@ const PaperMarkingForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) =>
         error.message ||
         'Error submitting form. Please try again.';
       alert(errorMessage);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      // Show loading state
+      alert('Generating PDF...');
+
+      // Get token from Clerk
+      const token = await getToken();
+
+      // Prepare form data for PDF
+      const formData = {
+        basicInfo: {
+          ...basicInfo,
+          examinerName: examinerName || user?.fullName || '',
+          examination,
+          subject,
+          upfNo,
+          address
+        },
+        paperDetails,
+        markingDetails,
+        practicalDetails,
+        totalAmount: calculateTotal()
+      };
+
+      // Use the utility function to generate PDF
+      await generateFormPdf(
+        formData,
+        'paper_marking',
+        {
+          fullName: user?.fullName || '',
+          email: user?.primaryEmailAddress?.emailAddress || ''
+        },
+        token
+      );
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Error generating PDF. Please try again.');
     }
   };
 
@@ -517,7 +570,7 @@ const PaperMarkingForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) =>
             <button
               type="button"
               className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 flex items-center gap-2"
-              onClick={() => alert('Downloading PDF...')}
+              onClick={handleDownloadPDF}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>

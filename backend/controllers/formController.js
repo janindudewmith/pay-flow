@@ -417,9 +417,16 @@ export const generateFormPdf = async (req, res) => {
     // In production, you'd check that the user is the form submitter or an approver
 
     try {
+      // Patch: Ensure formData is always in the correct nested structure
+      let patchedFormData = form.formData;
+      if (form.formType === 'petty_cash' && (!patchedFormData.basicInfo)) {
+        patchedFormData = { basicInfo: patchedFormData };
+      }
+      // Add similar patches for other form types if needed
+
       // Generate PDF
       const pdfPath = await pdfService.generatePdf(
-        form.formData,
+        patchedFormData,
         form.formType,
         form.submittedBy
       );

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 
 const OTPVerification = ({ email, onSuccess }) => {
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(300);
+  const inputRefs = useRef([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -15,6 +16,14 @@ const OTPVerification = ({ email, onSuccess }) => {
     return () => clearInterval(interval);
   }, [timer]);
 
+  const handleChange = (index, value) => {
+    if (value.length > 1) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    if (value && index < 5) inputRefs.current[index + 1].focus();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -22,7 +31,7 @@ const OTPVerification = ({ email, onSuccess }) => {
     try {
       const response = await axios.post('http://localhost:5000/api/otp/verify', {
         email,
-        otp,
+        otp: otp.join(''),
       });
       if (response.data.success) {
         if (onSuccess) onSuccess();
@@ -42,7 +51,8 @@ const OTPVerification = ({ email, onSuccess }) => {
     try {
       await axios.post('http://localhost:5000/api/otp/send', { email });
       setTimer(300);
-      setOtp('');
+      setOtp(['', '', '', '', '', '']);
+      inputRefs.current[0].focus();
     } catch (error) {
       setError(error.response?.data?.message || 'Error sending OTP');
     } finally {
@@ -51,39 +61,25 @@ const OTPVerification = ({ email, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h2 className="text-2xl font-bold mb-4">Enter OTP</h2>
-        <p className="text-gray-600 mb-4">
-          We've sent a 6-digit OTP to {email}
-        </p>
-        <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit}>
+      <p>We've sent a 6-digit OTP to {email}</p>
+      <div>
+        {otp.map((digit, idx) => (
           <input
+            key={idx}
+            ref={el => (inputRefs.current[idx] = el)}
             type="text"
-            maxLength="6"
-            value={otp}
-            onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
-            placeholder="Enter 6-digit OTP"
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4 text-center text-lg tracking-widest"
+            maxLength="1"
+            value={digit}
+            onChange={e => handleChange(idx, e.target.value)}
           />
-          {error && (
-            <div className="mb-4 text-red-500 text-sm">
-              {error}
-            </div>
-          )}
-          <div className="flex justify-end items-center">
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              disabled={loading || otp.length !== 6}
-            >
-              {loading ? 'Verifying...' : 'Submit'}
-            </button>
-          </div>
-        </form>
+        ))}
       </div>
-    </div>
+      {error && <div style={{ color: 'red' }}>{error}</div>}
+      <button type="button" onClick={handleResendOTP} disabled={loading}>Resend OTP</button>
+      <button type="submit" disabled={loading || otp.some(d => !d)}>Verify OTP</button>
+    </form>
   );
 };
 
-export default OTPVerification;
+export default OTPVerification; 

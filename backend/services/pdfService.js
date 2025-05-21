@@ -165,7 +165,7 @@ const generateHtmlContent = (formData, formType, user) => {
     <body>
       <div class="header">
         <div class="form-title">${formType.replace('_', ' ').toUpperCase()} FORM</div>
-        <div class="form-subtitle">University of Moratuwa</div>
+        <div class="form-subtitle">University of Ruhuna</div>
       </div>
   `;
 

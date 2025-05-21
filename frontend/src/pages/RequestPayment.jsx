@@ -13,14 +13,7 @@ const RequestPayment = () => {
   const { id } = useParams();
   const { user } = useUser();
   const { getToken } = useAuth();
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
   const [formData, setFormData] = useState({});
-  const [otpMessage, setOtpMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [submittedFormData, setSubmittedFormData] = useState(null);
   const navigate = useNavigate();
 
   // Get user email and full name from Clerk
@@ -45,103 +38,30 @@ const RequestPayment = () => {
   };
 
   const renderForm = () => {
-    const formProps = { setFormData, handleSendOtp, otpSent, isLoading, otpVerified };
     switch (id) {
       case 'petty-cash':
-        return <PettyCashForm {...formProps} />;
+        return <PettyCashForm setFormData={setFormData} />;
       case 'exam-duty':
-        return <ExamDutyForm {...formProps} />;
+        return <ExamDutyForm setFormData={setFormData} />;
       case 'paper-marking':
-        return <PaperMarkingForm {...formProps} />;
+        return <PaperMarkingForm setFormData={setFormData} />;
       case 'transportation':
-        return <TransportForm {...formProps} />;
+        return <TransportForm setFormData={setFormData} />;
       case 'overtime':
-        return <OvertimeForm {...formProps} />;
+        return <OvertimeForm setFormData={setFormData} />;
       default:
         return <div>Invalid Payment Type</div>;
     }
   };
 
-  const handleSendOtp = async () => {
-    try {
-      setIsLoading(true);
-      console.log('Sending OTP for email:', email);
-      const token = await getToken();
-      const res = await axios.post('http://localhost:5000/api/otp/send', 
-        { email },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      if (res.data.success) {
-        setOtpSent(true);
-        setOtpMessage(res.data.message);
-        alert('OTP sent successfully! Please check your email.');
-      } else {
-        alert('Failed to send OTP. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error sending OTP:', error);
-      alert(error.response?.data?.message || 'Failed to send OTP. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (!otp) {
-      alert('Please enter the OTP');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const token = await getToken();
-      const res = await axios.post('http://localhost:5000/api/otp/verify', 
-        { 
-          email, 
-          otp, 
-          purpose: 'form_submission'
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      
-      if (res.data.success) {
-        setOtpVerified(true);
-        alert('OTP verified successfully!');
-      } else {
-        alert(res.data.message || 'Invalid or expired OTP');
-      }
-    } catch (error) {
-      console.error('Error verifying OTP:', error);
-      alert(error.response?.data?.message || 'Failed to verify OTP. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSubmit = async () => {
-    if (!otpVerified) {
-      alert('Please verify OTP first');
-      return;
-    }
     try {
-      setIsLoading(true);
       const token = await getToken();
       const response = await axios.post('http://localhost:5000/api/forms/submit', {
         formType: id,
         formData,
         email,
         fullName,
-        otp
       }, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -150,16 +70,12 @@ const RequestPayment = () => {
       });
 
       if (response.data.success) {
-        setShowSuccessModal(true);
-        setSubmittedFormData(formData); // Save for PDF download
-        // Reset form state if needed
+        navigate('/');
       } else {
         alert(response.data.message || 'Failed to submit form. Please try again.');
       }
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to submit form. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -173,69 +89,11 @@ const RequestPayment = () => {
           <div className="w-full">
             {renderForm()}
             <div className="my-4">
-              {otpSent && !otpVerified && (
-                <div className="space-y-2">
-                  <input
-                    value={otp}
-                    onChange={e => setOtp(e.target.value)}
-                    placeholder="Enter OTP"
-                    className="border px-2 py-1 rounded mr-2"
-                  />
-                  <button
-                    onClick={handleVerifyOtp}
-                    disabled={isLoading}
-                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:bg-green-400"
-                  >
-                    {isLoading ? 'Verifying...' : 'Verify OTP'}
-                  </button>
-                </div>
-              )}
-              {otpVerified && (
-                <button
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                  className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800 disabled:bg-blue-400"
-                >
-                  {isLoading ? 'Submitting...' : 'Submit Form'}
-                </button>
-              )}
+              
             </div>
           </div>
         </div>
       </div>
-
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-            <h2 className="text-2xl font-bold mb-4 text-blue-700">Form Submitted Successfully!</h2>
-            <p className="mb-6">You can now download your submitted form as a PDF.</p>
-            <button
-              className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
-              onClick={async () => {
-                const token = await getToken();
-                await generateFormPdf(
-                  submittedFormData,
-                  id,
-                  { fullName, email },
-                  token
-                );
-              }}
-            >
-              Download PDF
-            </button>
-            <button
-              className="ml-4 px-4 py-2 rounded border border-gray-400"
-              onClick={() => {
-                setShowSuccessModal(false);
-                navigate('/');
-              }}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

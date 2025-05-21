@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { generateFormPdf } from '../../utils/pdfUtils';
 
-const ExamDutyForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
+const ExamDutyForm = () => {
   const { user } = useUser();
   const { getToken } = useAuth();
   const navigate = useNavigate();
   const [submitStatus, setSubmitStatus] = useState({ message: '', type: '' });
+  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Basic Information State
   const [basicInfo, setBasicInfo] = useState({
@@ -119,9 +122,8 @@ const ExamDutyForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setSubmitStatus({ message: '', type: '' });
-
+    setIsSubmitting(true);
     try {
       console.log('Getting authenticated API instance...');
 
@@ -158,8 +160,9 @@ const ExamDutyForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
           message: 'Request submitted successfully!',
           type: 'success'
         });
+        setSubmitted(true);
         alert('Form submitted successfully!');
-        navigate('/my-requests');
+        // navigate('/my-requests');
       } else {
         setSubmitStatus({
           message: response.data.message || 'Submission failed',
@@ -186,8 +189,31 @@ const ExamDutyForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
         'Error submitting form. Please try again.';
       alert(errorMessage);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      alert('Generating PDF...');
+      const token = await getToken();
+      const formData = { basicInfo, examDetails, totals };
+      await generateFormPdf(
+        formData,
+        'exam_duty',
+        {
+          fullName: user?.fullName || '',
+          email: user?.primaryEmailAddress?.emailAddress || ''
+        },
+        token
+      );
+    } catch (error) {
+      alert('Error generating PDF. Please try again.');
+    }
+  };
+
+  const handleViewRequests = () => {
+    navigate('/requests');
   };
 
   return (
@@ -516,27 +542,31 @@ const ExamDutyForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
 
         {/* Buttons Section */}
         <div className="mt-6 flex justify-start gap-4">
-          {otpVerified && (
-            <button
-              type="button"
-              className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 flex items-center gap-2"
-              onClick={() => alert('Downloading PDF...')}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-              </svg>
-              Download PDF
-            </button>
-          )}
-
           <button
-            type="button"
-            onClick={handleSendOtp}
-            disabled={otpSent || isLoading}
-            className="bg-blue-600 text-white px-4 py-2 rounded mr-2"
+            type="submit"
+            className={`bg-blue-600 text-white px-4 py-2 rounded mr-2 ${(isSubmitting || submitted) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
+            disabled={isSubmitting || submitted}
           >
-            {isLoading ? 'Sending...' : otpSent ? 'OTP Sent' : 'Send OTP'}
+            {isSubmitting ? 'Submitting...' : submitted ? 'Submitted' : 'Submit'}
           </button>
+          {submitted && (
+            <>
+              <button
+                type="button"
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
+                onClick={handleDownloadPDF}
+              >
+                Download Form
+              </button>
+              <button
+                type="button"
+                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors"
+                onClick={handleViewRequests}
+              >
+                View My Requests
+              </button>
+            </>
+          )}
         </div>
       </form>
     </div>

@@ -63,7 +63,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/forms', formRoutes); // Form submission routes
-app.use('/api/otp', otpRoutes);
+app.use('/api/otp', otpRoutes); // OTP routes
 app.use('/api/websocket', websocketRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/requests', requestRoutes);

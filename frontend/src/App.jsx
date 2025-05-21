@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import Home from './pages/Home';
 import RequestPayment from './pages/RequestPayment';
@@ -12,8 +12,34 @@ import FinanceDashboard from './pages/FinanceDashboard';
 import HeadDashboard from './pages/HeadDashboard';
 import PaymentDescriptionPage from './pages/PaymentDescription';
 import UserProfile from './components/UserProfile';
+import { useUser } from '@clerk/clerk-react';
+import { useOtp } from './context/OtpContext';
+import OTPVerification from './components/OTPVerification.jsx';
 
 const App = () => {
+  const { isSignedIn, user } = useUser();
+  const { otpVerified, setOtpVerified } = useOtp();
+  const [otpSent, setOtpSent] = useState(false);
+
+  useEffect(() => {
+    if (isSignedIn && user && !otpSent) {
+      fetch('http://localhost:5000/api/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.primaryEmailAddress.emailAddress }),
+      }).then(() => setOtpSent(true));
+    }
+  }, [isSignedIn, user, otpSent]);
+
+  if (isSignedIn && !otpVerified) {
+    return (
+      <OTPVerification
+        email={user.primaryEmailAddress.emailAddress}
+        onSuccess={() => setOtpVerified(true)}
+      />
+    );
+  }
+
   return (
     <div>
       <Navbar />

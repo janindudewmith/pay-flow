@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { generateFormPdf } from '../../utils/pdfUtils';
 
-const OvertimeForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
+const OvertimeForm = () => {
   const { user } = useUser();
   const { getToken } = useAuth();
   const navigate = useNavigate();
   const [submitStatus, setSubmitStatus] = useState({ message: '', type: '' });
+  const [submitted, setSubmitted] = useState(false);
 
   const [requestingOfficerDate, setRequestingOfficerDate] = useState('');
   const [headOfDepartmentDate, setHeadOfDepartmentDate] = useState('');
@@ -148,7 +150,6 @@ const OvertimeForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setSubmitStatus({ message: '', type: '' });
 
     try {
@@ -203,8 +204,9 @@ const OvertimeForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
           message: 'Request submitted successfully!',
           type: 'success'
         });
+        setSubmitted(true);
         alert('Form submitted successfully!');
-        navigate('/my-requests');
+        // navigate('/my-requests');
       } else {
         setSubmitStatus({
           message: response.data.message || 'Submission failed',
@@ -228,8 +230,24 @@ const OvertimeForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
         error.message ||
         'Error submitting form. Please try again.';
       alert(errorMessage);
-    } finally {
-      setIsLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      alert('Generating PDF...');
+      const token = await getToken();
+      await generateFormPdf(
+        formData,
+        'overtime',
+        {
+          fullName: user?.fullName || '',
+          email: user?.primaryEmailAddress?.emailAddress || ''
+        },
+        token
+      );
+    } catch (error) {
+      alert('Error generating PDF. Please try again.');
     }
   };
 
@@ -520,28 +538,21 @@ const OvertimeForm = ({ handleSendOtp, otpSent, isLoading, otpVerified }) => {
 
         {/* Buttons Section */}
         <div className="mt-6 flex justify-start gap-4">
-          {otpVerified && (
-            <button
-              type="button"
-              className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 flex items-center gap-2"
-              onClick={() => alert('Downloading PDF...')}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-              </svg>
-              Download PDF
-            </button>
-          )}
-
           <button
-            type="button"
-            onClick={handleSendOtp}
-            disabled={otpSent || isLoading}
+            type="submit"
             className="bg-blue-600 text-white px-4 py-2 rounded mr-2"
           >
-            {isLoading ? 'Sending...' : otpSent ? 'OTP Sent' : 'Send OTP'}
+            Submit
           </button>
-
+          {submitted && (
+            <button
+              type="button"
+              className="bg-green-600 text-white px-4 py-2 rounded"
+              onClick={handleDownloadPDF}
+            >
+              Download Form
+            </button>
+          )}
         </div>
 
       </form>

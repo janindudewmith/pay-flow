@@ -1,71 +1,41 @@
 import OTP from '../models/OTP.js';
-import { sendOTP } from '../services/emailService.js';
+import nodemailer from 'nodemailer';
 
-// Generate and send OTP
-export const generateOTP = async (req, res) => {
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+export const sendOTP = async (req, res) => {
   try {
-    const { email, purpose, formId } = req.body;
-
-    // Generate a 6-digit OTP
+    const { email } = req.body;
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Save OTP to database
-    await OTP.create({
-      email,
-      otp,
-      purpose,
-      formId,
+    await OTP.findOneAndUpdate({ email }, { otp }, { upsert: true, new: true });
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Your OTP for Pay Flow',
+      html: `<h1>Your OTP is: ${otp}</h1><p>This OTP will expire in 5 minutes.</p>`,
     });
-
-    // Send OTP via email
-    await sendOTP(email, otp, purpose);
-
-    res.status(200).json({
-      success: true,
-      message: 'OTP sent successfully',
-    });
+    res.status(200).json({ success: true, message: 'OTP sent' });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error generating OTP',
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: 'Error sending OTP', error: error.message });
   }
 };
 
-// Verify OTP
 export const verifyOTP = async (req, res) => {
   try {
-    const { email, otp, purpose, formId } = req.body;
-
-    // Find the OTP in database
-    const otpRecord = await OTP.findOne({
-      email,
-      otp,
-      purpose,
-      formId,
-      createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) }, // OTP not expired (5 minutes)
-    });
-
+    const { email, otp } = req.body;
+    const otpRecord = await OTP.findOne({ email, otp });
     if (!otpRecord) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or expired OTP',
-      });
+      return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
     }
-
-    // Delete the used OTP
     await OTP.deleteOne({ _id: otpRecord._id });
-
-    res.status(200).json({
-      success: true,
-      message: 'OTP verified successfully',
-    });
+    res.status(200).json({ success: true, message: 'OTP verified' });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error verifying OTP',
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: 'Error verifying OTP', error: error.message });
   }
 }; 

@@ -23,32 +23,18 @@ const getHodEmail = (department) => {
 };
 
 // Send OTP
-export const sendOTP = async (email, purpose, formId) => {
+export const sendOTP = async (email, otp, purpose) => {
   try {
-    console.log('Sending OTP to:', email);
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Save OTP to database
-    await OTP.create({
-      email,
-      otp,
-      purpose,
-      formId
-    });
-
-    // Send email
     await transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to: email,
-      subject: 'OTP Verification',
+      subject: 'Login OTP Verification',
       html: `
         <h1>OTP Verification</h1>
-        <p>Your OTP for ${purpose} is: <strong>${otp}</strong></p>
+        <p>Your OTP for login is: <strong>${otp}</strong></p>
         <p>This OTP will expire in 5 minutes.</p>
       `
     });
-
     return true;
   } catch (error) {
     console.error('Error sending OTP:', error);

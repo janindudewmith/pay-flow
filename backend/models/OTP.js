@@ -11,7 +11,7 @@ const otpSchema = new mongoose.Schema({
   },
   purpose: {
     type: String,
-    enum: ['form_submission', 'approval', 'rejection'],
+    enum: ['form_submission', 'approval', 'rejection', 'authentication', 'login'],
     required: true,
   },
   formId: {
@@ -22,11 +22,11 @@ const otpSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 300, // OTP expires after 5 minutes
+    expires: 300, // 5 min
   },
 });
 
 // Check if model exists before creating it
 const OTP = mongoose.models.OTP || mongoose.model('OTP', otpSchema);
 
-export default OTP; 
+export default OTP;

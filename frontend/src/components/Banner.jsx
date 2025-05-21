@@ -1,9 +1,12 @@
 import React from 'react';
 import { assets } from '../assets/assets';
-import { useClerk } from '@clerk/clerk-react';
+import { useClerk, useUser } from '@clerk/clerk-react';
 
 const Banner = () => {
   const { openSignIn } = useClerk();
+  const { isSignedIn } = useUser();
+
+  if (isSignedIn) return null;
 
   return (
     <div className='flex flex-col items-center gap-4 pt-10 px-8 md:px-0'>

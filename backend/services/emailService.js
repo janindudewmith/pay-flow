@@ -5,12 +5,10 @@ import OTP from '../models/OTP.js';
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: true,
+  service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
+    pass: process.env.EMAIL_PASS
   }
 });
 
@@ -135,5 +133,15 @@ export const sendRejectionNotification = async (email, formType, reason) => {
     `,
   };
 
+  await transporter.sendMail(mailOptions);
+};
+
+export const sendSimpleEmail = async (to, subject, text) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to,
+    subject,
+    text,
+  };
   await transporter.sendMail(mailOptions);
 };

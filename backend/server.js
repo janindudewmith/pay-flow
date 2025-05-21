@@ -8,6 +8,7 @@ import websocketRoutes from './routes/websocketRoutes.js';
 import 'dotenv/config';
 import connectDB from './config/mongodb.js';
 import { Clerk } from '@clerk/clerk-sdk-node';
+import nodemailer from 'nodemailer';
 
 // Route imports
 import authRoutes from './routes/authRoutes.js';
@@ -100,6 +101,19 @@ app.get('/api/test-clerk', async (req, res) => {
   }
 });
 
+app.get('/api/test-email', async (req, res) => {
+  try {
+    await sendFormNotification(
+      process.env.EMAIL_USER, // send to yourself for testing
+      'Test Email from PayFlow',
+      'This is a test email sent from your PayFlow backend.'
+    );
+    res.json({ success: true, message: 'Test email sent!' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // 404 handler
 app.use((req, res, next) => {
   res.status(404).json({
@@ -124,3 +138,21 @@ process.on('unhandledRejection', (err) => {
   // Close server & exit process
   server.close(() => process.exit(1));
 });
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail', // or your email provider
+  auth: {
+    user: process.env.EMAIL_USER, // set in your .env
+    pass: process.env.EMAIL_PASS, // set in your .env
+  },
+});
+
+export const sendFormNotification = async (to, subject, text) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to,
+    subject,
+    text,
+  };
+  await transporter.sendMail(mailOptions);
+};

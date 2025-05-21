@@ -1,6 +1,6 @@
 import Form from '../models/Form.js';
 import Department from '../models/Department.js';
-import { sendFormNotification, sendRejectionNotification, sendOTP } from '../services/emailService.js';
+import { sendFormNotification, sendRejectionNotification, sendOTP, sendSimpleEmail } from '../services/emailService.js';
 import { websocketService } from '../services/websocketService.js';
 import OTP from '../models/OTP.js';
 import mongoose from 'mongoose';
@@ -77,6 +77,14 @@ export const submitForm = async (req, res) => {
     const result = await mongoose.connection.collection('forms').insertOne(formDocument);
 
     console.log(`submitForm: Form saved with ID ${result.insertedId}`);
+
+    // Send notification to user
+    const user = req.user;
+    await sendSimpleEmail(
+      user.email,
+      'Form Submission Received',
+      `Dear ${user.fullName},\n\nYour form has been received and is pending approval.\n\nThank you!`
+    );
 
     res.status(200).json({
       success: true,

@@ -312,6 +312,16 @@ export const submitForm = async (req, res) => {
       formId: form._id
     });
 
+    // Debug log before sending email
+    console.log('About to send form notification email to', user.email);
+    await sendFormNotification(
+      user.email, // or another recipient
+      'Form Submission Received',
+      `Dear ${user.fullName},\n\nYour form has been received and is pending approval.\n\nThank you!`
+    );
+    // Debug log after sending email
+    console.log('Form notification email sent!');
+
     res.status(200).json({
       success: true,
       message: 'Form submitted successfully',

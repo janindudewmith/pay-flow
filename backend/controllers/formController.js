@@ -62,8 +62,8 @@ export const submitForm = async (req, res) => {
       formData: formData,
       submittedBy: {
         userId: userId,
-        email: req.user.email || req.body?.email || 'user@example.com',
-        fullName: req.user.fullName || req.body?.fullName || 'User',
+        email: req.body?.email || 'user@example.com',
+        fullName: req.body?.fullName || 'User',
         department: formData?.basicInfo?.department || 'unknown'
       },
       status: 'pending_hod_approval',
@@ -78,12 +78,24 @@ export const submitForm = async (req, res) => {
 
     console.log(`submitForm: Form saved with ID ${result.insertedId}`);
 
-    // Send notification to user
-    const user = req.user;
+    // After saving the form
+    const userEmail = req.body.formData?.email || req.body.email || req.user.email;
+    const userFullName = req.body.formData?.fullName || req.body.fullName || req.user.fullName || 'User';
+
+    // 1. Send confirmation to the user
+    console.log('Sending confirmation email to user:', userEmail);
     await sendSimpleEmail(
-      user.email,
+      userEmail,
       'Form Submission Received',
-      `Dear ${user.fullName},\n\nYour form has been received and is pending approval.\n\nThank you!`
+      `Dear ${userFullName},\n\nYour form was submitted successfully! We will notify you once it is reviewed.\n\nThank you for using PayFlow.`
+    );
+
+    // 2. Send alert to the admin/reviewer
+    console.log('Sending review alert to admin:', process.env.EMAIL_USER);
+    await sendSimpleEmail(
+      process.env.EMAIL_USER,
+      'New Form Submission to Review',
+      `A new form has been submitted by ${userFullName} (${userEmail}).\n\nPlease log in to review and process the submission.`
     );
 
     res.status(200).json({

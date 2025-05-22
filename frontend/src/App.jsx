@@ -15,6 +15,9 @@ import UserProfile from './components/UserProfile';
 import { useUser } from '@clerk/clerk-react';
 import { useOtp } from './context/OtpContext';
 import OTPVerification from './components/OTPVerification.jsx';
+import AboutUs from './pages/AboutUs';
+import ContactUs from './pages/ContactUs';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 const App = () => {
   const { isSignedIn, user } = useUser();
@@ -52,6 +55,9 @@ const App = () => {
         <Route path="/department-head-dashboard" element={<HeadDashboard />} />
         <Route path="/finance-officer-dashboard" element={<FinanceDashboard />} />
         <Route path="/payment-description/:paymentType" element={<PaymentDescriptionPage />} />
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="/contact" element={<ContactUs />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       </Routes>
       <Footer />
     </div>

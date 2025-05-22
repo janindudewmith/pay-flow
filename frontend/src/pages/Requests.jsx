@@ -10,6 +10,7 @@ const Requests = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [requests, setRequests] = useState([]);
   const [expandedRequest, setExpandedRequest] = useState(null);
+  const [canceledRequests, setCanceledRequests] = useState([]);
 
   // Fetch user's requests when component mounts
   useEffect(() => {
@@ -67,12 +68,7 @@ const Requests = () => {
   };
 
   const handleCancelRequest = (id) => {
-    // Implement cancellation logic here
-    // const updatedRequests = requests.map(req =>
-    //   req.id === id ? { ...req, status: 'Cancelled' } : req
-    // );
-    // setRequests(updatedRequests);
-    alert(`Request ${id} cancellation not implemented yet`);
+    setExpandedRequest(null);
   };
 
   const handleDownloadPDF = async (id, formType) => {
@@ -184,7 +180,7 @@ const Requests = () => {
                                 Download
                               </button>
 
-                              {(request.status === 'pending_hod_approval' || request.status === 'pending_finance_approval') && (
+                              {(request.status === 'pending_hod_approval' || request.status === 'pending_finance_approval') && !canceledRequests.includes(request._id) && (
                                 <button
                                   onClick={() => handleCancelRequest(request._id)}
                                   className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"

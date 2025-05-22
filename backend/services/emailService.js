@@ -412,3 +412,76 @@ export const sendSimpleEmail = async (to, subject, text, formData = null) => {
     throw error;
   }
 };
+
+export const sendNewsletterConfirmation = async (email, name) => {
+  try {
+    const mailOptions = {
+      from: `"PayFlow" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Welcome to PayFlow Newsletter!',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background-color: #1a56db; padding: 30px; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; text-align: center; font-size: 24px;">Welcome to PayFlow Newsletter!</h1>
+          </div>
+          
+          <div style="background-color: #ffffff; padding: 40px; border: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
+            <p style="font-size: 16px; line-height: 1.6; color: #374151; margin-bottom: 20px;">
+              Dear ${name || 'Valued Subscriber'},
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; color: #374151; margin-bottom: 20px;">
+              Thank you for subscribing to the PayFlow newsletter! We're excited to have you join our community of payment management professionals.
+            </p>
+
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h2 style="color: #374151; margin-top: 0; font-size: 18px;">What to Expect:</h2>
+              <ul style="color: #374151; padding-left: 20px;">
+                <li style="margin-bottom: 10px;">Latest updates on payment management trends</li>
+                <li style="margin-bottom: 10px;">Tips and best practices for efficient payment processing</li>
+                <li style="margin-bottom: 10px;">New features and improvements to PayFlow</li>
+                <li style="margin-bottom: 10px;">Exclusive insights and industry news</li>
+              </ul>
+            </div>
+
+            <p style="font-size: 16px; line-height: 1.6; color: #374151; margin-bottom: 20px;">
+              We're committed to providing you with valuable content that helps you make the most of your payment management experience.
+            </p>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}" 
+                 style="background-color: #1a56db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">
+                Visit PayFlow
+              </a>
+            </div>
+
+            <p style="font-size: 16px; line-height: 1.6; color: #374151; margin-bottom: 20px;">
+              If you have any questions or suggestions, feel free to reply to this email. We'd love to hear from you!
+            </p>
+
+            <p style="font-size: 16px; line-height: 1.6; color: #374151; margin-bottom: 20px;">
+              Best regards,<br>
+              <strong>The PayFlow Team</strong>
+            </p>
+
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                You're receiving this email because you subscribed to the PayFlow newsletter. 
+                To unsubscribe, click <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/unsubscribe?email=${email}" 
+                style="color: #1a56db; text-decoration: underline;">here</a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    console.log('Sending newsletter confirmation email to:', email);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Newsletter confirmation email sent successfully:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending newsletter confirmation:', error);
+    throw error;
+  }
+};

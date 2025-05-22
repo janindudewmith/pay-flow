@@ -18,6 +18,7 @@ import OTPVerification from './components/OTPVerification.jsx';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import ScrollToTop from './components/ScrollToTop';
 
 const App = () => {
   const { isSignedIn, user } = useUser();
@@ -60,6 +61,8 @@ const App = () => {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       </Routes>
       <Footer />
+      <ScrollToTop />
+      <ToastContainer />
     </div>
   );
 };

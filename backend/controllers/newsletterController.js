@@ -1,11 +1,12 @@
 import NewsletterSubscriber from '../models/NewsletterSubscriber.js';
-import { sendSimpleEmail } from '../services/emailService.js';
+import { sendSimpleEmail, sendNewsletterConfirmation } from '../services/emailService.js';
+import mongoose from 'mongoose';
 
 export const subscribeToNewsletter = async (req, res) => {
   try {
     console.log('=== Newsletter Subscription Request ===');
     console.log('Request body:', req.body);
-    const { email } = req.body;
+    const { email, name } = req.body;
     console.log('Processing subscription for email:', email);
 
     if (!email) {
@@ -23,61 +24,37 @@ export const subscribeToNewsletter = async (req, res) => {
     if (existingSubscriber) {
       console.log('Found existing subscriber:', existingSubscriber);
       
-      // Always send a welcome email, regardless of subscription status
-      console.log('Sending welcome email...');
-      try {
-        await sendSimpleEmail(
-          email,
-          'Welcome to PayFlow Newsletter!',
-          `Thank you for your interest in our newsletter!\n\nYou'll receive regular updates about PayFlow and the latest news in payment management.\n\nBest regards,\nThe PayFlow Team`
-        );
-        console.log('Welcome email sent successfully');
-      } catch (emailError) {
-        console.error('Error sending welcome email:', emailError);
-        console.log('Continuing despite email error...');
+      // Update existing subscription
+      console.log('Updating subscription...');
+      existingSubscriber.isActive = true;
+      existingSubscriber.updatedAt = new Date();
+      if (name) {
+        existingSubscriber.name = name;
       }
+      await existingSubscriber.save();
 
-      if (existingSubscriber.isActive) {
-        console.log('Subscriber is already active');
-        return res.status(200).json({
-          success: true,
-          message: 'Welcome back! You are already subscribed to our newsletter'
-        });
-      } else {
-        // Reactivate subscription
-        console.log('Reactivating subscription...');
-        existingSubscriber.isActive = true;
-        existingSubscriber.subscribedAt = new Date();
-        await existingSubscriber.save();
+      // Send welcome email
+      await sendNewsletterConfirmation(email, name);
 
-        return res.status(200).json({
-          success: true,
-          message: 'Welcome back! Your newsletter subscription has been reactivated'
-        });
-      }
+      return res.status(200).json({
+        success: true,
+        message: 'Thank you for subscribing to our newsletter!'
+      });
     }
 
     // Create new subscription
     console.log('Creating new subscription...');
     const newSubscriber = await NewsletterSubscriber.create({
       email,
-      subscribedAt: new Date(),
-      isActive: true
+      name,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
     console.log('New subscriber created:', newSubscriber);
 
-    console.log('Sending welcome email...');
-    try {
-      await sendSimpleEmail(
-        email,
-        'Welcome to PayFlow Newsletter!',
-        `Thank you for subscribing to our newsletter!\n\nYou'll now receive regular updates about PayFlow and the latest news in payment management.\n\nBest regards,\nThe PayFlow Team`
-      );
-      console.log('Welcome email sent successfully');
-    } catch (emailError) {
-      console.error('Error sending welcome email:', emailError);
-      console.log('Continuing despite email error...');
-    }
+    // Send welcome email
+    await sendNewsletterConfirmation(email, name);
 
     console.log('Subscription process completed successfully');
     return res.status(201).json({

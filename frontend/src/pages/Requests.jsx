@@ -87,6 +87,12 @@ const Requests = () => {
     }
   };
 
+  // Calculate summary counts
+  const pendingCount = requests.filter(r => r.status === 'pending_hod_approval' || r.status === 'pending_finance_approval').length;
+  const approvedCount = requests.filter(r => r.status === 'approved').length;
+  const rejectedCount = requests.filter(r => r.status === 'rejected').length;
+  const totalCount = requests.length;
+
   return (
     <div className="container 2xl:px-20 mx-auto my-8">
       <div className="bg-gradient-to-r from-blue-900 via-blue-750 to-blue-600 text-white py-8 px-6 rounded-xl mb-6">
@@ -94,6 +100,25 @@ const Requests = () => {
         <p className="text-sm text-white/80 mt-2">
           Track and manage all your submitted payment requests
         </p>
+      </div>
+      {/* Summary Section */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="bg-blue-100 text-blue-900 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold">{pendingCount}</div>
+          <div className="text-sm font-medium">Pending</div>
+        </div>
+        <div className="bg-green-100 text-green-900 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold">{approvedCount}</div>
+          <div className="text-sm font-medium">Approved</div>
+        </div>
+        <div className="bg-red-100 text-red-900 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold">{rejectedCount}</div>
+          <div className="text-sm font-medium">Rejected</div>
+        </div>
+        <div className="bg-gray-100 text-gray-900 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold">{totalCount}</div>
+          <div className="text-sm font-medium">Total</div>
+        </div>
       </div>
       <div className="border border-blue-200 shadow-lg rounded-lg bg-white p-6">
         {isLoading ? (

@@ -59,11 +59,35 @@ export const sendOTP = async (email, otp, purpose) => {
     const mailOptions = {
       from: `"PayFlow" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: 'Login OTP Verification',
+      subject: 'PayFlow OTP Verification',
       html: `
-        <h1>OTP Verification</h1>
-        <p>Your OTP for login is: <strong>${otp}</strong></p>
-        <p>This OTP will expire in 5 minutes.</p>
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #f4f6fb; border-radius: 10px; border: 1px solid #e5e7eb;">
+          <div style="background: linear-gradient(90deg, #1a56db 0%, #2563eb 100%); padding: 24px 0; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="color: #fff; margin: 0; font-size: 1.5rem;">PayFlow OTP Verification</h1>
+          </div>
+          <div style="padding: 32px 24px 24px 24px; background: #fff; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px; color: #374151; margin-bottom: 24px;">
+              Hello,<br>
+              Please use the following One-Time Password (OTP) to complete your login to <strong>PayFlow</strong>:
+            </p>
+            <div style="text-align: center; margin-bottom: 24px;">
+              <span style="display: inline-block; font-size: 2rem; letter-spacing: 8px; color: #1a56db; font-weight: bold; background: #f1f5f9; padding: 12px 32px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                ${otp}
+              </span>
+            </div>
+            <p style="font-size: 15px; color: #374151; margin-bottom: 16px;">
+              <strong>This OTP will expire in 5 minutes.</strong>
+            </p>
+            <p style="font-size: 14px; color: #6b7280;">
+              If you did not request this code, please ignore this email or contact our support team.
+            </p>
+            <div style="margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 16px; text-align: center;">
+              <span style="font-size: 13px; color: #9ca3af;">
+                &copy; ${new Date().getFullYear()} PayFlow. All rights reserved.
+              </span>
+            </div>
+          </div>
+        </div>
       `
     };
 

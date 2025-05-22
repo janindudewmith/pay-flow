@@ -1,10 +1,12 @@
 import React from 'react';
 import { assets } from '../assets/assets';
 import { useClerk, useUser } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
 
 const Banner = () => {
   const { openSignIn } = useClerk();
   const { isSignedIn } = useUser();
+  const navigate = useNavigate();
 
   if (isSignedIn) return null;
 
@@ -21,7 +23,10 @@ const Banner = () => {
         >
           Get started
         </button>
-        <button className="flex items-center gap-2 hover:scale-105 transition-transform duration-300 ease-in-out">
+        <button
+          className="flex items-center gap-2 hover:scale-105 transition-transform duration-300 ease-in-out"
+          onClick={() => navigate('/about')}
+        >
           Learn more
           <img src={assets.arrow_icon} alt="arrow_icon" />
         </button>

@@ -5,10 +5,12 @@ import mongoose from 'mongoose';
 import formRoutes from './routes/formRoutes.js';
 import otpRoutes from './routes/otpRoutes.js';
 import websocketRoutes from './routes/websocketRoutes.js';
+import newsletterRoutes from './routes/newsletterRoutes.js';
+import contactRoutes from './routes/contactRoutes.js';
 import 'dotenv/config';
 import connectDB from './config/mongodb.js';
 import { Clerk } from '@clerk/clerk-sdk-node';
-import nodemailer from 'nodemailer';
+import { sendFormNotification } from './services/emailService.js';
 
 // Route imports
 import authRoutes from './routes/authRoutes.js';
@@ -65,6 +67,8 @@ app.use((req, res, next) => {
 app.use('/api/forms', formRoutes); // Form submission routes
 app.use('/api/otp', otpRoutes); // OTP routes
 app.use('/api/websocket', websocketRoutes);
+app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/contact', contactRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/users', userRoutes);
@@ -138,21 +142,3 @@ process.on('unhandledRejection', (err) => {
   // Close server & exit process
   server.close(() => process.exit(1));
 });
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail', // or your email provider
-  auth: {
-    user: process.env.EMAIL_USER, // set in your .env
-    pass: process.env.EMAIL_PASS, // set in your .env
-  },
-});
-
-export const sendFormNotification = async (to, subject, text) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to,
-    subject,
-    text,
-  };
-  await transporter.sendMail(mailOptions);
-};

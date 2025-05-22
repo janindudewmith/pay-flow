@@ -86,16 +86,26 @@ export const submitForm = async (req, res) => {
     console.log('Sending confirmation email to user:', userEmail);
     await sendSimpleEmail(
       userEmail,
-      'Form Submission Received',
-      `Dear ${userFullName},\n\nYour form was submitted successfully! We will notify you once it is reviewed.\n\nThank you for using PayFlow.`
+      'Form Submission Confirmation',
+      `Dear ${userFullName},\n\nYour ${formType.replace('_', ' ').toUpperCase()} form was submitted successfully! We will notify you once it is reviewed.\n\nThank you for using PayFlow.`,
+      {
+        formType,
+        submittedBy: {
+          fullName: userFullName,
+          email: userEmail,
+          department: formData?.basicInfo?.department || 'unknown'
+        },
+        basicInfo: formData?.basicInfo || formData
+      }
     );
 
-    // 2. Send alert to the admin/reviewer
+    // 2. Send alert to the admin/reviewer with form details
     console.log('Sending review alert to admin:', process.env.EMAIL_USER);
     await sendSimpleEmail(
       process.env.EMAIL_USER,
-      'New Form Submission to Review',
-      `A new form has been submitted by ${userFullName} (${userEmail}).\n\nPlease log in to review and process the submission.`
+      `New ${formType.replace('_', ' ').toUpperCase()} Form Submission`,
+      `A new form has been submitted by ${userFullName} (${userEmail}).\n\nPlease log in to review and process the submission.`,
+      formDocument // Pass the complete form document
     );
 
     res.status(200).json({

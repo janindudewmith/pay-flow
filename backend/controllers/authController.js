@@ -1,5 +1,5 @@
 import OTP from '../models/OTP.js';
-import { sendFormNotification } from '../server.js';
+import { sendSimpleEmail } from '../services/emailService.js';
 import User from '../models/User.js';
 
 // Login with OTP
@@ -28,7 +28,7 @@ export const loginWithOTP = async (req, res) => {
     );
 
     // Send OTP via email
-    await sendFormNotification(
+    await sendSimpleEmail(
       email,
       'Your PayFlow Login OTP',
       `Your OTP for PayFlow login is: ${otp}\n\nThis OTP will expire in 5 minutes.`
@@ -110,7 +110,7 @@ export const sendAuthOTP = async (req, res) => {
     });
 
     // Send OTP via email
-    await sendFormNotification(
+    await sendSimpleEmail(
       email,
       'Your PayFlow Authentication OTP',
       `Your OTP for PayFlow authentication is: ${otp}\n\nThis OTP will expire in 5 minutes.`

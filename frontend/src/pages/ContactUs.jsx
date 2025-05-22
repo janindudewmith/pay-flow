@@ -1,6 +1,47 @@
-import React from 'react';
+import React, { useState } from 'react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const ContactUs = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/contact/send', formData);
+      
+      if (response.data.success) {
+        toast.success('Message sent successfully!');
+        // Clear form
+        setFormData({
+          name: '',
+          email: '',
+          subject: '',
+          message: ''
+        });
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error sending message');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -33,14 +74,17 @@ const ContactUs = () => {
               {/* Contact Form */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-blue-800 text-lg mb-2">Send us a Message</h3>
-                <form className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                     <input
                       type="text"
                       id="name"
+                      value={formData.name}
+                      onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Your name"
+                      required
                     />
                   </div>
                   <div>
@@ -48,8 +92,11 @@ const ContactUs = () => {
                     <input
                       type="email"
                       id="email"
+                      value={formData.email}
+                      onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="your.email@example.com"
+                      required
                     />
                   </div>
                   <div>
@@ -57,24 +104,31 @@ const ContactUs = () => {
                     <input
                       type="text"
                       id="subject"
+                      value={formData.subject}
+                      onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Message subject"
+                      required
                     />
                   </div>
                   <div>
                     <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">Message</label>
                     <textarea
                       id="message"
+                      value={formData.message}
+                      onChange={handleChange}
                       rows="4"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Your message"
+                      required
                     ></textarea>
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                    disabled={loading}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors disabled:bg-blue-400"
                   >
-                    Send Message
+                    {loading ? 'Sending...' : 'Send Message'}
                   </button>
                 </form>
               </div>

@@ -34,6 +34,8 @@ const getHodEmail = (department) => {
 export const submitForm = async (req, res) => {
   try {
     console.log('Form submission received');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('User from auth middleware:', req.user);
 
     const { formType, formData } = req.body;
 
@@ -56,70 +58,102 @@ export const submitForm = async (req, res) => {
       });
     }
 
+    // Get department from form data
+    const department = formData?.basicInfo?.department?.toLowerCase() || 'unknown';
+    const hodEmail = getHodEmail(department);
+
     // Create the form document
     const formDocument = {
       formType: formType,
       formData: formData,
       submittedBy: {
         userId: userId,
-        email: req.body?.email || 'user@example.com',
-        fullName: req.body?.fullName || 'User',
-        department: formData?.basicInfo?.department || 'unknown'
+        email: req.body?.email || req.user.email,
+        fullName: req.body?.fullName || req.user.fullName,
+        department: department
       },
       status: 'pending_hod_approval',
+      currentApproverEmail: hodEmail,
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
-    console.log(`submitForm: Saving form for user ${userId}`);
+    console.log('Attempting to save form document:', JSON.stringify(formDocument, null, 2));
 
     // Insert the form document
     const result = await mongoose.connection.collection('forms').insertOne(formDocument);
-
-    console.log(`submitForm: Form saved with ID ${result.insertedId}`);
+    console.log(`Form saved successfully with ID: ${result.insertedId}`);
 
     // After saving the form
-    const userEmail = req.body.formData?.email || req.body.email || req.user.email;
-    const userFullName = req.body.formData?.fullName || req.body.fullName || req.user.fullName || 'User';
+    const userEmail = req.body?.email || req.user.email;
+    const userFullName = req.body?.fullName || req.user.fullName;
 
-    // 1. Send confirmation to the user
-    console.log('Sending confirmation email to user:', userEmail);
-    await sendSimpleEmail(
-      userEmail,
-      'Form Submission Confirmation',
-      `Dear ${userFullName},\n\nYour ${formType.replace('_', ' ').toUpperCase()} form was submitted successfully! We will notify you once it is reviewed.\n\nThank you for using PayFlow.`,
-      {
-        formType,
-        submittedBy: {
-          fullName: userFullName,
-          email: userEmail,
-          department: formData?.basicInfo?.department || 'unknown'
-        },
-        basicInfo: formData?.basicInfo || formData
+    // Send emails in parallel and don't wait for them
+    Promise.all([
+      // 1. Send confirmation to the user
+      sendSimpleEmail(
+        userEmail,
+        'Form Submission Confirmation',
+        `Dear ${userFullName},\n\nYour ${formType.replace('_', ' ').toUpperCase()} form was submitted successfully! The form has been sent to your department head for review.\n\nThank you for using PayFlow.`,
+        {
+          formType,
+          submittedBy: {
+            fullName: userFullName,
+            email: userEmail,
+            department: department
+          },
+          basicInfo: formData?.basicInfo || formData
+        }
+      ).catch(error => console.error('Error sending user confirmation email:', error)),
+
+      // 2. Send notification to the department head
+      hodEmail ? sendFormNotification(
+        hodEmail,
+        'new_form_submission',
+        {
+          ...formDocument,
+          _id: result.insertedId,
+          formType: formType.replace('_', ' ').toUpperCase(),
+          submittedBy: {
+            fullName: userFullName,
+            email: userEmail,
+            department: department
+          }
+        }
+      ).catch(error => console.error('Error sending HOD notification email:', error)) : Promise.resolve()
+    ]).catch(error => console.error('Error in email sending:', error));
+
+    // 3. Notify through websocket if available
+    if (websocketService) {
+      try {
+        websocketService.notifyNewForm({
+          formId: result.insertedId,
+          formType,
+          department,
+          hodEmail
+        });
+      } catch (error) {
+        console.error('Error sending websocket notification:', error);
       }
-    );
+    }
 
-    // 2. Send alert to the admin/reviewer with form details
-    console.log('Sending review alert to admin:', process.env.EMAIL_USER);
-    await sendSimpleEmail(
-      process.env.EMAIL_USER,
-      `New ${formType.replace('_', ' ').toUpperCase()} Form Submission`,
-      `A new form has been submitted by ${userFullName} (${userEmail}).\n\nPlease log in to review and process the submission.`,
-      formDocument // Pass the complete form document
-    );
-
-    res.status(200).json({
+    // Send success response immediately after saving to database
+    return res.status(200).json({
       success: true,
-      message: 'Form submitted successfully',
+      message: 'Form submitted successfully and sent to department head',
       formId: result.insertedId
     });
+
   } catch (error) {
     console.error('Error submitting form:', error);
+    console.error('Error stack:', error.stack);
 
-    res.status(500).json({
+    // If we get here, it means the database save failed
+    return res.status(500).json({
       success: false,
       message: 'Error submitting form',
-      error: error.message
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };

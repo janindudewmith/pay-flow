@@ -251,6 +251,10 @@ const OvertimeForm = () => {
     }
   };
 
+  const handleViewRequests = () => {
+    navigate('/requests');
+  };
+
   return (
     <div className="max-w-4xl border border-gray-300 mx-auto p-6 bg-white shadow-lg rounded-lg">
       <div className="text-center mb-6">
@@ -540,18 +544,28 @@ const OvertimeForm = () => {
         <div className="mt-6 flex justify-start gap-4">
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded mr-2"
+            className={`bg-blue-600 text-white px-4 py-2 rounded mr-2 ${(submitted || submitted) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
+            disabled={submitted || submitted}
           >
-            Submit
+            {submitted ? 'Submitted' : 'Submit'}
           </button>
           {submitted && (
-            <button
-              type="button"
-              className="bg-green-600 text-white px-4 py-2 rounded"
-              onClick={handleDownloadPDF}
-            >
-              Download Form
-            </button>
+            <>
+              <button
+                type="button"
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
+                onClick={handleDownloadPDF}
+              >
+                Download Form
+              </button>
+              <button
+                type="button"
+                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors"
+                onClick={handleViewRequests}
+              >
+                View My Requests
+              </button>
+            </>
           )}
         </div>
 

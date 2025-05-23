@@ -67,6 +67,15 @@ const PettyCashForm = () => {
         fullName: user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
       };
 
+      console.log('Submitting form with data:', {
+        formType: 'petty_cash',
+        formData: {
+          basicInfo: basicInfo
+        },
+        email: userData.email,
+        fullName: userData.fullName
+      });
+
       // Create a direct axios instance with the token
       const response = await axios({
         method: 'post',
@@ -90,7 +99,7 @@ const PettyCashForm = () => {
       if (response.data.success) {
         setSubmitted(true);
         alert('Form submitted successfully!');
-        // navigate('/my-requests');
+        // The buttons will appear automatically because setSubmitted(true) triggers the conditional rendering
       } else {
         alert(response.data.message || 'Error submitting form. Please try again.');
       }
@@ -101,12 +110,24 @@ const PettyCashForm = () => {
         response: error.response?.data,
         status: error.response?.status,
         url: error.config?.url,
-        baseURL: error.config?.baseURL
+        baseURL: error.config?.baseURL,
+        headers: error.config?.headers
       });
 
-      const errorMessage = error.response?.data?.message ||
-        error.message ||
-        'Error submitting form. Please try again.';
+      let errorMessage = 'Error submitting form. ';
+      
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        errorMessage += `Server responded with status ${error.response.status}: ${error.response.data?.message || error.message}`;
+      } else if (error.request) {
+        // The request was made but no response was received
+        errorMessage += 'No response received from server. Please check your internet connection.';
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        errorMessage += error.message;
+      }
+      
       alert(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -162,6 +183,7 @@ const PettyCashForm = () => {
               onChange={handleBasicInfoChange}
               className="w-full p-2 border border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
               required
+              disabled={submitted}
             />
           </div>
           <div>
@@ -173,6 +195,7 @@ const PettyCashForm = () => {
                 onChange={handleBasicInfoChange}
                 className="w-full p-2 border border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
                 required
+                disabled={submitted}
               >
                 <option className='text-sm' value="">Select Position</option>
                 <option className='text-sm' value="Senior Lecturer">Senior Lecturer</option>
@@ -200,6 +223,7 @@ const PettyCashForm = () => {
                 onChange={handleBasicInfoChange}
                 className="w-full p-2 border border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
                 required
+                disabled={submitted}
               >
                 <option className='text-sm' value="">Select Department</option>
                 <option className='text-sm' value="Electrical">
@@ -231,6 +255,7 @@ const PettyCashForm = () => {
               onChange={handleBasicInfoChange}
               className="w-full p-2 border border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
               required
+              disabled={submitted}
             />
           </div>
         </div>
@@ -247,6 +272,7 @@ const PettyCashForm = () => {
               className="w-full p-2 border border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
               required
               min="0"
+              disabled={submitted}
             />
           </div>
           <div>
@@ -260,6 +286,7 @@ const PettyCashForm = () => {
               required
               min="0"
               max="99"
+              disabled={submitted}
             />
           </div>
           <div>
@@ -271,6 +298,7 @@ const PettyCashForm = () => {
               onChange={handleBasicInfoChange}
               className="w-full p-2 border border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
               required
+              disabled={submitted}
             />
           </div>
         </div>
@@ -284,6 +312,7 @@ const PettyCashForm = () => {
             className="w-full p-2 border border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
             rows="4"
             required
+            disabled={submitted}
           />
         </div>
 
@@ -297,6 +326,7 @@ const PettyCashForm = () => {
               value={basicInfo.declarationAmount}
               onChange={handleBasicInfoChange}
               className="p-1 mx-2 w-20 inline-block border border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
+              disabled={submitted}
             />
             requested as petty cash advance will be used solely for the purpose stated above. I understand that all expenses must be supported
             by valid receipts and any unused funds must be returned within 7 working days of the expenditure.
@@ -316,6 +346,7 @@ const PettyCashForm = () => {
                 value={basicInfo.requestingOfficerDate}
                 onChange={handleBasicInfoChange}
                 className="w-full p-1 border text-xs mt-1 border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
+                disabled={submitted}
               />
             </div>
           </div>
@@ -329,6 +360,7 @@ const PettyCashForm = () => {
                 value={basicInfo.departmentHeadDate}
                 onChange={handleBasicInfoChange}
                 className="w-full p-1 border text-xs mt-1 border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
+                disabled={submitted}
               />
               <label className="block text-xs mt-2">Cost Center:</label>
               <input
@@ -337,6 +369,7 @@ const PettyCashForm = () => {
                 value={basicInfo.costCenter}
                 onChange={handleBasicInfoChange}
                 className="w-full p-1 border text-xs mt-1 border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
+                disabled={submitted}
               />
             </div>
           </div>
@@ -350,6 +383,7 @@ const PettyCashForm = () => {
                 value={basicInfo.financeDate}
                 onChange={handleBasicInfoChange}
                 className="w-full p-1 border text-xs mt-1 border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
+                disabled={submitted}
               />
               <label className="block text-xs mt-2">Voucher No:</label>
               <input
@@ -358,6 +392,7 @@ const PettyCashForm = () => {
                 value={basicInfo.voucherNo}
                 onChange={handleBasicInfoChange}
                 className="w-full p-1 border text-xs mt-1 border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
+                disabled={submitted}
               />
             </div>
           </div>

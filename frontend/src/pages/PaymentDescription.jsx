@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { assets } from '../assets/assets';
+import { useUser, useClerk } from '@clerk/clerk-react';
 
 const PaymentDescription = () => {
   const { paymentType } = useParams();
   const navigate = useNavigate();
+  const { isSignedIn } = useUser();
+  const { openSignIn } = useClerk();
   const [paymentDetails, setPaymentDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -111,6 +114,15 @@ const PaymentDescription = () => {
 
   const currentPaymentOption = paymentOptions.find(option => option.id === paymentType);
 
+  const handleProceedClick = (e) => {
+    e.preventDefault();
+    if (!isSignedIn) {
+      openSignIn();
+    } else {
+      navigate(currentPaymentOption?.link);
+    }
+  };
+
   return (
     <div className="container 2xl:px-20 mx-auto my-10">
       <div className="bg-white rounded-2xl border-4 border-gray-200 shadow-md p-8 relative overflow-hidden">
@@ -131,15 +143,15 @@ const PaymentDescription = () => {
                 />
               </div>
               <div className="mt-6 space-y-3 w-full max-w-48">
-                <Link
-                  to={currentPaymentOption?.link}
+                <button
+                  onClick={handleProceedClick}
                   className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:translate-y-[-2px] hover:shadow-lg flex items-center justify-center"
                 >
                   <span>Proceed to Form</span>
                   <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                   </svg>
-                </Link>
+                </button>
                 <Link
                   to="/"
                   className="w-full border border-blue-600 text-blue-600 hover:bg-blue-100 px-4 py-2.5 rounded-xl transition-colors duration-300 flex items-center justify-center"

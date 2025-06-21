@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getApiWithToken } from '../utils/axios';
 import { assets } from '../assets/assets';
-import { toast } from 'react-toastify';
+import { toast, Zoom } from 'react-toastify';
 
 const ViewRequests = () => {
   const { requestId } = useParams();
@@ -59,13 +59,30 @@ const ViewRequests = () => {
       });
 
       if (response.data && response.data.success) {
-        toast.success('Request approved successfully!');
+        // Show toast with longer duration
+        toast.success('Request approved successfully!', {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          transition: Zoom
+        });
 
-        // Force a full page reload of the dashboard to ensure fresh data
-        const dashboardUrl = isFinanceOfficer ? '/finance/dashboard' : '/department/dashboard';
-        window.location.href = dashboardUrl;
+        // Add a longer delay before redirecting to allow time for the toast to complete
+        setTimeout(() => {
+          // Force a full page reload of the dashboard to ensure fresh data
+          const dashboardUrl = isFinanceOfficer ? '/finance/dashboard' : '/department/dashboard';
+          window.location.href = dashboardUrl;
+        }, 3500); // 3.5 second delay, slightly longer than the toast duration
       } else {
-        toast.error('Failed to approve request. Please try again.');
+        toast.error('Failed to approve request. Please try again.', {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true
+        });
       }
     } catch (error) {
       console.error('Error approving request:', error);
@@ -79,7 +96,10 @@ const ViewRequests = () => {
     const rejectionReason = reasonInputRef.current?.value?.trim();
 
     if (!rejectionReason) {
-      toast.error('Please provide a reason for rejection.');
+      toast.error('Please provide a reason for rejection.', {
+        position: "top-center",
+        autoClose: 3000
+      });
       return;
     }
 
@@ -99,14 +119,31 @@ const ViewRequests = () => {
       });
 
       if (response.data && response.data.success) {
-        toast.success('Request rejected successfully!');
+        // Show toast with longer duration
+        toast.success('Request rejected successfully!', {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          transition: Zoom
+        });
         setShowRejectionModal(false);
 
-        // Force a full page reload of the dashboard to ensure fresh data
-        const dashboardUrl = isFinanceOfficer ? '/finance/dashboard' : '/department/dashboard';
-        window.location.href = dashboardUrl;
+        // Add a longer delay before redirecting to allow time for the toast to complete
+        setTimeout(() => {
+          // Force a full page reload of the dashboard to ensure fresh data
+          const dashboardUrl = isFinanceOfficer ? '/finance/dashboard' : '/department/dashboard';
+          window.location.href = dashboardUrl;
+        }, 3500); // 3.5 second delay, slightly longer than the toast duration
       } else {
-        toast.error('Failed to reject request. Please try again.');
+        toast.error('Failed to reject request. Please try again.', {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true
+        });
       }
     } catch (error) {
       console.error('Error rejecting request:', error);

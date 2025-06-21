@@ -4,12 +4,15 @@ const connectDB = async () => {
   try {
     // Use default connection string if environment variable is not set
     const uri = process.env.MONGODB_URI || "mongodb://localhost:27017";
-    const dbName = "/pay-flow";
 
-    console.log(`Attempting to connect to MongoDB at: ${uri}${dbName}`);
+    // Check if URI already includes a database name
+    const dbName = uri.includes('mongodb.net/') ? '' : '/pay-flow';
+
+    const connectionString = `${uri}${dbName}`;
+    console.log(`Attempting to connect to MongoDB at: ${connectionString}`);
 
     // Configure Mongoose connection options
-    await mongoose.connect(`${uri}${dbName}`, {
+    await mongoose.connect(connectionString, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });

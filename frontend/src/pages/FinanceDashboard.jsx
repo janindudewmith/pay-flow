@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { assets } from '../assets/assets';
+import { getApiWithToken } from '../utils/axios';
 
 const FinanceDashboard = () => {
   // State for requests data
@@ -8,13 +9,15 @@ const FinanceDashboard = () => {
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState(new Date());
+
   // Filter states
   const [statusFilter, setStatusFilter] = useState('pending');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
-  
+
   // Stats for dashboard
   const [stats, setStats] = useState({
     pendingRequests: 0,
@@ -27,136 +30,147 @@ const FinanceDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [requestsPerPage] = useState(10);
 
-  // Fetch requests data
-  useEffect(() => {
-    const fetchRequests = async () => {
-      setIsLoading(true);
-      try {
-        // In a real app, this would be an API call
-        // const response = await fetch('/api/finance/requests');
-        // const data = await response.json();
-        
-        // Mock data for demonstration
-        const mockData = [
-          {
-            id: '1',
-            formType: 'Petty Cash',
-            userEmail: 'john@eie.ruh.ac.lk',
-            submittedAt: '2025-04-10T09:30:00',
-            status: 'pending',
-            currentApprover: 'finance_officer',
-            amount: 2500,
-            department: 'Electrical',
-            formData: {
-              requestorName: 'John Smith',
-              amountRs: '2500',
-              reasonForRequest: 'Office supplies purchase'
+  // Finance officer info (would come from auth context in a real app)
+  const [financeInfo, setFinanceInfo] = useState({
+    name: 'Finance Department',
+    officer: 'Nimal Perera'
+  });
+
+  // Function to fetch requests data
+  const fetchRequests = async () => {
+    setIsRefreshing(true);
+    try {
+      // Get authenticated API instance
+      const api = await getApiWithToken();
+
+      console.log('FinanceDashboard: Fetching forms from API...');
+
+      // Fetch all forms from the backend
+      const response = await api.get('/api/forms/all-forms');
+
+      console.log('FinanceDashboard: API response received:', response.data);
+
+      if (response.data && response.data.success) {
+        const formsData = response.data.data || [];
+
+        console.log('FinanceDashboard: Forms data received:', formsData);
+
+        if (formsData.length === 0) {
+          console.log('FinanceDashboard: No forms data received');
+          setRequests([]);
+          setStats({
+            pendingRequests: 0,
+            approvedRequests: 0,
+            rejectedRequests: 0,
+            totalAmount: 0
+          });
+          setIsLoading(false);
+          setIsRefreshing(false);
+          setLastRefreshed(new Date());
+          return;
+        }
+
+        // Transform the data to match the expected format
+        const transformedData = formsData.map(form => {
+          console.log('Processing form:', form);
+
+          // Extract the amount from formData based on form type
+          let amount = 0;
+          try {
+            if (form.formType === 'petty_cash') {
+              amount = parseFloat(form.formData.basicInfo?.amountRs || 0);
+            } else if (form.formType === 'exam_duty') {
+              amount = parseFloat(form.formData.basicInfo?.totalAmount || 0);
+            } else if (form.formType === 'transport') {
+              amount = parseFloat(form.formData.basicInfo?.totalRequested || 0);
+            } else if (form.formType === 'overtime') {
+              amount = parseFloat(form.formData.basicInfo?.amountInFigures || 0);
+            } else if (form.formType === 'paper_marking') {
+              amount = parseFloat(form.formData.basicInfo?.totalAmount || 0);
             }
-          },
-          {
-            id: '2',
-            formType: 'Exam Duty',
-            userEmail: 'sarah@cee.ruh.ac.lk',
-            submittedAt: '2025-04-09T14:15:00',
-            status: 'pending',
-            currentApprover: 'finance_officer',
-            amount: 5000,
-            department: 'Civil',
-            formData: {
-              officerName: 'Sarah Johnson',
-              totalAmount: '5000',
-              venue: 'Drawing Office 1'
-            }
-          },
-          {
-            id: '3',
-            formType: 'Transportation',
-            userEmail: 'mike@mme.ruh.ac.lk',
-            submittedAt: '2025-04-08T11:45:00',
-            status: 'pending',
-            currentApprover: 'finance_officer',
-            amount: 3200,
-            department: 'Mechanical',
-            formData: {
-              officerName: 'Mike Brown',
-              totalRequested: '3200',
-              destination: 'Colombo'
-            }
-          },
-          {
-            id: '4',
-            formType: 'Overtime',
-            userEmail: 'lisa@eie.ruh.ac.lk',
-            submittedAt: '2025-04-07T16:20:00',
-            status: 'approved',
-            amount: 4500,
-            department: 'Electrical',
-            formData: {
-              nameOfApplicant: 'Lisa Wong',
-              amountInFigures: '4500',
-              description: 'System maintenance'
-            }
-          },
-          {
-            id: '5',
-            formType: 'Paper Marking',
-            userEmail: 'david@cee.ruh.ac.lk',
-            submittedAt: '2025-04-06T10:00:00',
-            status: 'rejected',
-            amount: 7500,
-            department: 'Civil',
-            formData: {
-              examinerName: 'David Miller',
-              totalAmount: '7500',
-              subject: 'Structural Engineering'
-            }
+          } catch (error) {
+            console.error('Error parsing amount:', error);
           }
-        ];
-        
-        setRequests(mockData);
-        
+
+          // Format the form type for display
+          const displayFormType = form.formType
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+
+          return {
+            id: form._id,
+            formType: displayFormType,
+            userEmail: form.submittedBy?.email || 'unknown@example.com',
+            submittedAt: form.createdAt || new Date().toISOString(),
+            status: form.status === 'pending_finance_approval' ? 'pending' :
+              form.status === 'approved' ? 'approved' : 'rejected',
+            currentApprover: 'finance_officer',
+            amount: amount,
+            department: form.submittedBy?.department || 'Unknown',
+            formData: {
+              requestorName: form.submittedBy?.fullName || 'Unknown User',
+              officerName: form.submittedBy?.fullName || 'Unknown User',
+              nameOfApplicant: form.submittedBy?.fullName || 'Unknown User',
+              examinerName: form.submittedBy?.fullName || 'Unknown User'
+            }
+          };
+        });
+
+        console.log('FinanceDashboard: Transformed data:', transformedData);
+
+        setRequests(transformedData);
+
         // Calculate stats
-        const pendingCount = mockData.filter(req => req.status === 'pending').length;
-        const approvedCount = mockData.filter(req => req.status === 'approved').length;
-        const rejectedCount = mockData.filter(req => req.status === 'rejected').length;
-        const total = mockData.reduce((sum, req) => sum + req.amount, 0);
-        
+        const pendingCount = transformedData.filter(req => req.status === 'pending').length;
+        const approvedCount = transformedData.filter(req => req.status === 'approved').length;
+        const rejectedCount = transformedData.filter(req => req.status === 'rejected').length;
+        const total = transformedData.reduce((sum, req) => sum + req.amount, 0);
+
         setStats({
           pendingRequests: pendingCount,
           approvedRequests: approvedCount,
           rejectedRequests: rejectedCount,
           totalAmount: total
         });
-        
-      } catch (err) {
-        setError('Failed to fetch requests. Please try again later.');
-        console.error('Error fetching requests:', err);
-      } finally {
-        setIsLoading(false);
+      } else {
+        console.error('FinanceDashboard: API response indicates failure:', response.data);
+        throw new Error('Failed to fetch forms data');
       }
-    };
-    
+    } catch (err) {
+      console.error('FinanceDashboard: Error fetching requests:', err);
+      setError('Failed to fetch requests. Please try again later.');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+      setLastRefreshed(new Date());
+    }
+  };
+
+  // Fetch requests data on component mount
+  useEffect(() => {
+    setIsLoading(true);
     fetchRequests();
   }, []);
 
   // Apply filters
   useEffect(() => {
     let result = [...requests];
-    
+
     // Status filter
     if (statusFilter !== 'all') {
       result = result.filter(req => req.status === statusFilter);
     }
-    
+
     // Department filter
     if (departmentFilter !== 'all') {
       result = result.filter(req => req.department === departmentFilter);
     }
-    
+
     // Search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      result = result.filter(req => 
+      result = result.filter(req =>
         req.formType.toLowerCase().includes(query) ||
         req.userEmail.toLowerCase().includes(query) ||
         req.formData.requestorName?.toLowerCase().includes(query) ||
@@ -165,19 +179,19 @@ const FinanceDashboard = () => {
         req.formData.examinerName?.toLowerCase().includes(query)
       );
     }
-    
+
     // Date range
     if (dateRange.from) {
       const fromDate = new Date(dateRange.from);
       result = result.filter(req => new Date(req.submittedAt) >= fromDate);
     }
-    
+
     if (dateRange.to) {
       const toDate = new Date(dateRange.to);
       toDate.setHours(23, 59, 59);
       result = result.filter(req => new Date(req.submittedAt) <= toDate);
     }
-    
+
     setFilteredRequests(result);
   }, [requests, statusFilter, departmentFilter, searchQuery, dateRange]);
 
@@ -185,7 +199,7 @@ const FinanceDashboard = () => {
   const indexOfLastRequest = currentPage * requestsPerPage;
   const indexOfFirstRequest = indexOfLastRequest - requestsPerPage;
   const currentRequests = filteredRequests.slice(indexOfFirstRequest, indexOfLastRequest);
-  
+
   // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -194,40 +208,217 @@ const FinanceDashboard = () => {
     const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
-  
+
+  // Format date and time with seconds for refresh timestamp
+  const formatDateTime = (date) => {
+    return new Date(date).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
   // Extract department from email
   const getDepartmentFromEmail = (email) => {
     const domain = email.split('@')[1];
     const deptCode = domain.split('.')[0];
-    
+
     const departments = {
       'eie': 'Electrical & Information Engineering',
       'cee': 'Civil & Environmental Engineering',
       'mme': 'Mechanical & Manufacturing Engineering'
     };
-    
+
     return departments[deptCode] || deptCode.toUpperCase();
   };
 
   // Handle approve/reject actions
   const handleApprove = async (id) => {
-    // In a real app, this would call an API
-    alert(`Approved request ${id}`);
-  };
-  
-  const handleReject = async (id) => {
-    const reason = prompt('Please provide a reason for rejection:');
-    if (reason) {
-      // In a real app, this would call an API with the reason
-      alert(`Rejected request ${id}. Reason: ${reason}`);
+    try {
+      const api = await getApiWithToken();
+
+      // In a real implementation, we would first request an OTP
+      // For now, we'll simulate approval directly
+      const response = await api.post(`/api/forms/${id}/action`, {
+        action: 'approve',
+        comments: 'Approved by finance officer',
+        otp: '123456' // In a real app, this would be entered by the user after receiving it via email
+      });
+
+      if (response.data && response.data.success) {
+        alert(`Request ${id} approved successfully!`);
+
+        // Update the local state to reflect the change
+        setRequests(prevRequests =>
+          prevRequests.map(req =>
+            req.id === id
+              ? { ...req, status: 'approved' }
+              : req
+          )
+        );
+
+        // Update stats
+        setStats(prevStats => ({
+          ...prevStats,
+          pendingRequests: prevStats.pendingRequests - 1,
+          approvedRequests: prevStats.approvedRequests + 1
+        }));
+      } else {
+        alert('Failed to approve request. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error approving request:', error);
+      alert(`Error: ${error.response?.data?.message || error.message}`);
     }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      const reason = prompt('Please provide a reason for rejection:');
+      if (!reason) return; // User cancelled
+
+      const api = await getApiWithToken();
+
+      // In a real implementation, we would first request an OTP
+      // For now, we'll simulate rejection directly
+      const response = await api.post(`/api/forms/${id}/action`, {
+        action: 'reject',
+        comments: reason,
+        otp: '123456' // In a real app, this would be entered by the user after receiving it via email
+      });
+
+      if (response.data && response.data.success) {
+        alert(`Request ${id} rejected successfully!`);
+
+        // Update the local state to reflect the change
+        setRequests(prevRequests =>
+          prevRequests.map(req =>
+            req.id === id
+              ? { ...req, status: 'rejected' }
+              : req
+          )
+        );
+
+        // Update stats
+        setStats(prevStats => ({
+          ...prevStats,
+          pendingRequests: prevStats.pendingRequests - 1,
+          rejectedRequests: prevStats.rejectedRequests + 1
+        }));
+      } else {
+        alert('Failed to reject request. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      alert(`Error: ${error.response?.data?.message || error.message}`);
+    }
+  };
+
+  // Handle manual refresh
+  const handleRefresh = () => {
+    fetchRequests();
   };
 
   return (
     <div className="container mx-auto px-4 2xl:px-20 py-8">
       <div className="border border-gray-200 bg-white rounded-xl shadow-lg p-6 mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Finance Officer Dashboard</h1>
-        
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Finance Dashboard</h1>
+            <p className="text-sm text-gray-600 mt-1">{financeInfo.name}</p>
+          </div>
+          <div className="mt-4 md:mt-0 bg-green-50 px-4 py-2 rounded-lg">
+            <p className="text-sm text-gray-700">Welcome, <span className="font-medium">{financeInfo.officer}</span></p>
+            <p className="text-xs text-gray-500">Today is {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          </div>
+        </div>
+
+        {/* Refresh Section */}
+        <div className="mb-8 bg-gradient-to-r from-green-50 to-teal-50 border border-green-100 rounded-xl p-6 shadow-sm">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-4 md:mb-0">
+              <h2 className="text-lg font-semibold text-teal-800">Finance Request Dashboard Refresh</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Click the button to fetch the latest payment requests awaiting finance approval.
+                This ensures you're viewing the most up-to-date information for processing payments.
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Last refreshed: {formatDateTime(lastRefreshed)}
+              </p>
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className={`flex items-center justify-center px-6 py-3 rounded-lg text-white font-medium transition-all duration-300 ${isRefreshing
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 shadow-md hover:shadow-lg'
+                }`}
+              style={{ minWidth: '180px' }}
+            >
+              {isRefreshing ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                  Refresh Dashboard
+                </>
+              )}
+            </button>
+          </div>
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white p-3 rounded-lg border border-green-100 shadow-sm">
+              <div className="flex items-center">
+                <div className="bg-green-100 p-2 rounded-full">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs text-gray-500">Payment Requests</p>
+                  <p className="text-sm font-semibold">Auto-refreshed every session</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-3 rounded-lg border border-green-100 shadow-sm">
+              <div className="flex items-center">
+                <div className="bg-teal-100 p-2 rounded-full">
+                  <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs text-gray-500">Budget Updates</p>
+                  <p className="text-sm font-semibold">Real-time budget tracking</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-3 rounded-lg border border-green-100 shadow-sm">
+              <div className="flex items-center">
+                <div className="bg-yellow-100 p-2 rounded-full">
+                  <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs text-gray-500">Alerts</p>
+                  <p className="text-sm font-semibold">Priority payment notifications</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-blue-50 border border-blue-100 rounded-lg p-5">
@@ -244,7 +435,7 @@ const FinanceDashboard = () => {
             </div>
             <p className="text-xs text-gray-500 mt-2">Awaiting your review</p>
           </div>
-          
+
           <div className="bg-green-50 border border-green-100 rounded-lg p-5">
             <div className="flex justify-between items-center">
               <div>
@@ -259,7 +450,7 @@ const FinanceDashboard = () => {
             </div>
             <p className="text-xs text-gray-500 mt-2">Successfully processed</p>
           </div>
-          
+
           <div className="bg-red-50 border border-red-100 rounded-lg p-5">
             <div className="flex justify-between items-center">
               <div>
@@ -274,7 +465,7 @@ const FinanceDashboard = () => {
             </div>
             <p className="text-xs text-gray-500 mt-2">Denied due to issues</p>
           </div>
-          
+
           <div className="bg-purple-50 border border-purple-100 rounded-lg p-5">
             <div className="flex justify-between items-center">
               <div>
@@ -290,13 +481,13 @@ const FinanceDashboard = () => {
             <p className="text-xs text-gray-500 mt-2">Total processed value</p>
           </div>
         </div>
-        
+
         {/* Filters */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select 
+              <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -307,10 +498,10 @@ const FinanceDashboard = () => {
                 <option value="rejected">Rejected</option>
               </select>
             </div>
-            
+
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-              <select 
+              <select
                 value={departmentFilter}
                 onChange={(e) => setDepartmentFilter(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -322,28 +513,28 @@ const FinanceDashboard = () => {
                 <option value="Marine">Marine Engineering</option>
               </select>
             </div>
-            
+
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 value={dateRange.from}
-                onChange={(e) => setDateRange({...dateRange, from: e.target.value})}
+                onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-            
+
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 value={dateRange.to}
-                onChange={(e) => setDateRange({...dateRange, to: e.target.value})}
+                onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
           </div>
-          
+
           <div className="mt-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -361,7 +552,7 @@ const FinanceDashboard = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Requests Table */}
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
@@ -421,11 +612,11 @@ const FinanceDashboard = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {request.formData.requestorName || 
-                         request.formData.officerName || 
-                         request.formData.nameOfApplicant || 
-                         request.formData.examinerName || 
-                         'Unknown'}
+                        {request.formData.requestorName ||
+                          request.formData.officerName ||
+                          request.formData.nameOfApplicant ||
+                          request.formData.examinerName ||
+                          'Unknown'}
                       </div>
                       <div className="text-xs text-gray-500">{request.userEmail}</div>
                     </td>
@@ -440,35 +631,23 @@ const FinanceDashboard = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                          request.status === 'approved' ? 'bg-green-100 text-green-800' : 
-                          'bg-red-100 text-red-800'}`}>
+                        ${request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            'bg-red-100 text-red-800'}`}>
                         {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <Link to={`/finance/requests/${request.id}`} className="text-blue-600 hover:text-blue-900">
-                          View
-                        </Link>
-                        
-                        {request.status === 'pending' && request.currentApprover === 'finance_officer' && (
-                          <>
-                            <button 
-                              onClick={() => handleApprove(request.id)} 
-                              className="text-green-600 hover:text-green-900"
-                            >
-                              Approve
-                            </button>
-                            <button 
-                              onClick={() => handleReject(request.id)} 
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                      </div>
+                      <Link
+                        to={`/finance/requests/${request.id}`}
+                        className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                      >
+                        <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        Review
+                      </Link>
                     </td>
                   </tr>
                 ))}
@@ -476,7 +655,7 @@ const FinanceDashboard = () => {
             </table>
           </div>
         )}
-        
+
         {/* Pagination */}
         {filteredRequests.length > 0 && (
           <div className="flex justify-between items-center mt-6">
@@ -487,18 +666,17 @@ const FinanceDashboard = () => {
               </span>{' '}
               of <span className="font-medium">{filteredRequests.length}</span> results
             </div>
-            
+
             <nav className="flex justify-center">
               <ul className="flex space-x-2">
                 {Array.from({ length: Math.ceil(filteredRequests.length / requestsPerPage) }).map((_, index) => (
                   <li key={index}>
                     <button
                       onClick={() => paginate(index + 1)}
-                      className={`px-3 py-1 rounded-md ${
-                        currentPage === index + 1
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
+                      className={`px-3 py-1 rounded-md ${currentPage === index + 1
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
                     >
                       {index + 1}
                     </button>

@@ -40,9 +40,9 @@ const AdminLogin = () => {
         localStorage.setItem('adminRole', matchedAdmin.role);
 
         if (matchedAdmin.role === 'department_head') {
-          navigate('/department-head-dashboard');
+          navigate('/department/dashboard');
         } else if (matchedAdmin.role === 'finance_officer') {
-          navigate('/finance-officer-dashboard');
+          navigate('/finance/dashboard');
         }
       } else {
         setError('Invalid credentials or role mismatch');

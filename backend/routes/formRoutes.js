@@ -9,7 +9,8 @@ import {
   getForms,
   getFormById,
   generateFormPdf,
-  generatePdfFromData
+  generatePdfFromData,
+  getAllForms
 } from '../controllers/formController.js';
 import { authMiddleware } from '../middleware/auth.js';
 import mongoose from 'mongoose';
@@ -21,12 +22,17 @@ router.post('/submit', authMiddleware, submitForm);
 router.post('/verify-and-submit', authMiddleware, verifyAndSubmitForm);
 
 // Form action routes (approve/reject)
-router.post('/:formId/action', authMiddleware, handleFormAction);
+router.post('/:formId/action', authMiddleware, async (req, res) => {
+  // Add the formId from URL params to the request body
+  req.body.formId = req.params.formId;
+  return handleFormAction(req, res);
+});
 
 // Form retrieval routes
 router.get('/my-forms', authMiddleware, getUserForms);
 router.get('/hod-forms', authMiddleware, getHodForms);
 router.get('/finance-forms', authMiddleware, getFinanceForms);
+router.get('/all-forms', authMiddleware, getAllForms);
 
 // Get all forms for the user
 router.get('/', authMiddleware, getForms);

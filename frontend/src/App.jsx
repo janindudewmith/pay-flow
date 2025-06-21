@@ -10,6 +10,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import FinanceDashboard from './pages/FinanceDashboard';
 import HeadDashboard from './pages/HeadDashboard';
+import ViewRequests from './pages/ViewRequests';
 import PaymentDescriptionPage from './pages/PaymentDescription';
 import UserProfile from './components/UserProfile';
 import { useUser } from '@clerk/clerk-react';
@@ -53,8 +54,10 @@ const App = () => {
         <Route path='/request-payment/:id' element={<RequestPayment />} />
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path='/requests' element={<Requests />} />
-        <Route path="/department-head-dashboard" element={<HeadDashboard />} />
-        <Route path="/finance-officer-dashboard" element={<FinanceDashboard />} />
+        <Route path="/department/dashboard" element={<HeadDashboard />} />
+        <Route path="/department/requests/:requestId" element={<ViewRequests />} />
+        <Route path="/finance/dashboard" element={<FinanceDashboard />} />
+        <Route path="/finance/requests/:requestId" element={<ViewRequests />} />
         <Route path="/payment-description/:paymentType" element={<PaymentDescriptionPage />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<ContactUs />} />

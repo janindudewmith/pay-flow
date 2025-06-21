@@ -32,6 +32,12 @@ const Navbar = ({ title }) => {
     { title: 'Contact Us', path: '/contact' },
   ];
 
+  // Admin links - will be shown conditionally based on role
+  const adminLinks = [
+    { title: 'Department Head Dashboard', path: '/department/dashboard' },
+    { title: 'Finance Dashboard', path: '/finance/dashboard' },
+  ];
+
   // Click outside & ESC key handling for modal
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -127,6 +133,26 @@ const Navbar = ({ title }) => {
                   }`}></span>
               </Link>
             ))}
+
+            {/* Admin Dashboard Links */}
+            {user && user.publicMetadata?.role && (
+              <>
+                {adminLinks.map((link) => (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className={`px-4 py-5 transition-all duration-200 font-medium relative group ${isActive(link.path)
+                      ? 'text-blue-600'
+                      : 'text-gray-700 hover:text-blue-600'
+                      }`}
+                  >
+                    {link.title}
+                    <span className={`absolute bottom-0 left-0 w-full h-1 bg-blue-600 transform transition-transform duration-300 ${isActive(link.path) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                      }`}></span>
+                  </Link>
+                ))}
+              </>
+            )}
           </div>
 
           {title && <div className="text-xl font-semibold">{title}</div>}
@@ -209,6 +235,28 @@ const Navbar = ({ title }) => {
                   {link.title}
                 </Link>
               ))}
+
+              {/* Admin Links - show for admins */}
+              {user && user.publicMetadata?.role && (
+                <>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-500 mb-2 px-4">Admin Dashboards</h3>
+                    {adminLinks.map((link) => (
+                      <Link
+                        key={link.path}
+                        to={link.path}
+                        className={`block px-4 py-2 rounded-lg transition-colors ${isActive(link.path)
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                          }`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {link.title}
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
 
               {user && (
                 <>

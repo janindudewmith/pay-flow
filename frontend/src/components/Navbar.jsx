@@ -17,6 +17,20 @@ const Navbar = ({ title }) => {
   const isRequestsPage = location.pathname === '/requests';
   const isAdminLoginPage = location.pathname === '/admin-login';
 
+  // Check if the user has an admin role (either from Clerk or localStorage)
+  const isAdmin = (user && user.publicMetadata?.role) || localStorage.getItem('adminRole') ? true : false;
+
+  // Get dashboard link based on role
+  const getDashboardLink = () => {
+    const clerkRole = user?.publicMetadata?.role;
+    const localRole = localStorage.getItem('adminRole');
+    const role = clerkRole || localRole;
+
+    if (role === 'department_head') return '/department/dashboard';
+    if (role === 'finance_officer') return '/finance/dashboard';
+    return '/';
+  };
+
   const paymentOptions = [
     { title: 'Petty Cash Reimbursement', link: '/request-payment/petty-cash', description: 'Request reimbursement for small expenses', icon: '💰' },
     { title: 'Exam Duty Payment', link: '/request-payment/exam-duty', description: 'Claim payment for examination supervision duties', icon: '📝' },
@@ -75,6 +89,14 @@ const Navbar = ({ title }) => {
   const handleRegularLogin = () => {
     if (isAdminLoginPage) navigate('/');
     openSignIn();
+  };
+
+  const handleLogout = () => {
+    // Simple logout without using Clerk - just redirect to home page
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminRole');
+    navigate('/');
+    window.location.reload(); // Force reload to clear any auth state
   };
 
   // Animation for modal entry
@@ -189,15 +211,37 @@ const Navbar = ({ title }) => {
             </div>
           ) : (
             <div className="hidden md:flex gap-4 max-sm:text-sm">
-              <button onClick={handleAdminLogin} className="text-gray-600 hover:text-blue-600">
-                Admin Login
-              </button>
-              <button
-                onClick={handleRegularLogin}
-                className="bg-blue-600 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05]"
-              >
-                Login
-              </button>
+              {isAdmin ? (
+                <>
+                  <Link
+                    to={getDashboardLink()}
+                    className={`px-4 py-2 transition-all duration-200 font-medium relative group ${isActive(getDashboardLink()) ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
+                      }`}
+                  >
+                    My Dashboard
+                    <span className={`absolute bottom-0 left-0 w-full h-1 bg-blue-600 transform transition-transform duration-300 ${isActive(getDashboardLink()) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                      }`}></span>
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-blue-600 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05]"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={handleAdminLogin} className="text-gray-600 hover:text-blue-600">
+                    Admin Login
+                  </button>
+                  <button
+                    onClick={handleRegularLogin}
+                    className="bg-blue-600 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05]"
+                  >
+                    Login
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -294,24 +338,47 @@ const Navbar = ({ title }) => {
 
               {!user && (
                 <div className="pt-4 mt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => {
-                      handleRegularLogin();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg mb-3"
-                  >
-                    Login
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleAdminLogin();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg"
-                  >
-                    Admin Login
-                  </button>
+                  {isAdmin ? (
+                    <>
+                      <Link
+                        to={getDashboardLink()}
+                        className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg mb-3 block text-center"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        My Dashboard
+                      </Link>
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          handleRegularLogin();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg mb-3"
+                      >
+                        Login
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleAdminLogin();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg"
+                      >
+                        Admin Login
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>

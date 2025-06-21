@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getApiWithToken } from '../utils/axios';
 import { assets } from '../assets/assets';
+import { toast } from 'react-toastify';
 
 const ViewRequests = () => {
   const { requestId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const reasonInputRef = useRef(null);
 
   // Determine if we're in department head or finance context
   const isFinanceOfficer = location.pathname.includes('/finance/');
@@ -15,7 +17,6 @@ const ViewRequests = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectionModal, setShowRejectionModal] = useState(false);
 
   useEffect(() => {
@@ -46,32 +47,39 @@ const ViewRequests = () => {
     try {
       const api = await getApiWithToken();
 
-      // In a real implementation, we would first request an OTP
-      // For now, we'll simulate approval directly
+      // Determine the role based on the URL path
+      const role = isFinanceOfficer ? 'finance_officer' : 'department_head';
+
+      console.log('Approving request with role:', role);
+
       const response = await api.post(`/api/forms/${requestId}/action`, {
         action: 'approve',
-        comments: 'Approved',
-        otp: '123456' // In a real app, this would be entered by the user after receiving it via email
+        comments: 'Approved by ' + (isFinanceOfficer ? 'finance officer' : 'department head'),
+        userRole: role
       });
 
       if (response.data && response.data.success) {
-        alert('Request approved successfully!');
-        // Navigate back to the dashboard
-        navigate(isFinanceOfficer ? '/finance/dashboard' : '/department/dashboard');
+        toast.success('Request approved successfully!');
+
+        // Force a full page reload of the dashboard to ensure fresh data
+        const dashboardUrl = isFinanceOfficer ? '/finance/dashboard' : '/department/dashboard';
+        window.location.href = dashboardUrl;
       } else {
-        alert('Failed to approve request. Please try again.');
+        toast.error('Failed to approve request. Please try again.');
       }
     } catch (error) {
       console.error('Error approving request:', error);
-      alert(`Error: ${error.response?.data?.message || error.message}`);
+      toast.error(`Error: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleReject = async () => {
-    if (!rejectionReason.trim()) {
-      alert('Please provide a reason for rejection.');
+    const rejectionReason = reasonInputRef.current?.value?.trim();
+
+    if (!rejectionReason) {
+      toast.error('Please provide a reason for rejection.');
       return;
     }
 
@@ -79,25 +87,30 @@ const ViewRequests = () => {
     try {
       const api = await getApiWithToken();
 
-      // In a real implementation, we would first request an OTP
-      // For now, we'll simulate rejection directly
+      // Determine the role based on the URL path
+      const role = isFinanceOfficer ? 'finance_officer' : 'department_head';
+
+      console.log('Rejecting request with role:', role);
+
       const response = await api.post(`/api/forms/${requestId}/action`, {
         action: 'reject',
         comments: rejectionReason,
-        otp: '123456' // In a real app, this would be entered by the user after receiving it via email
+        userRole: role
       });
 
       if (response.data && response.data.success) {
-        alert('Request rejected successfully!');
+        toast.success('Request rejected successfully!');
         setShowRejectionModal(false);
-        // Navigate back to the dashboard
-        navigate(isFinanceOfficer ? '/finance/dashboard' : '/department/dashboard');
+
+        // Force a full page reload of the dashboard to ensure fresh data
+        const dashboardUrl = isFinanceOfficer ? '/finance/dashboard' : '/department/dashboard';
+        window.location.href = dashboardUrl;
       } else {
-        alert('Failed to reject request. Please try again.');
+        toast.error('Failed to reject request. Please try again.');
       }
     } catch (error) {
       console.error('Error rejecting request:', error);
-      alert(`Error: ${error.response?.data?.message || error.message}`);
+      toast.error(`Error: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -114,6 +127,31 @@ const ViewRequests = () => {
       currency: 'LKR',
       minimumFractionDigits: 2
     }).format(amount);
+  };
+
+  // Department name mapping function
+  const getDepartmentFullName = (shortName) => {
+    if (!shortName) return 'Unknown Department';
+
+    console.log('Department mapping input:', shortName);
+
+    // Convert to lowercase for case-insensitive matching
+    const deptLower = shortName.toLowerCase();
+    let result = shortName;
+
+    // Check for department by keywords
+    if (deptLower.includes('eie') || deptLower.includes('electrical') || deptLower.includes('information')) {
+      result = 'Department of Electrical and Information Engineering';
+    }
+    else if (deptLower.includes('cee') || deptLower.includes('civil') || deptLower.includes('environmental')) {
+      result = 'Department of Civil and Environmental Engineering';
+    }
+    else if (deptLower.includes('mme') || deptLower.includes('mechanical') || deptLower.includes('manufacturing')) {
+      result = 'Department of Mechanical and Manufacturing Engineering';
+    }
+
+    console.log('Department mapping result:', result);
+    return result;
   };
 
   const renderFormContent = () => {
@@ -183,7 +221,7 @@ const ViewRequests = () => {
 
             <div>
               <p className="text-sm text-gray-600">Department</p>
-              <p className="font-medium">{formData.submittedBy?.department || 'Unknown'}</p>
+              <p className="font-medium">{getDepartmentFullName(formData.submittedBy?.department)}</p>
             </div>
           </div>
         </div>
@@ -470,38 +508,39 @@ const ViewRequests = () => {
   };
 
   // Rejection Modal
-  const RejectionModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Reject Request</h3>
-        <p className="text-sm text-gray-600 mb-4">Please provide a reason for rejecting this request.</p>
+  function RejectionModal() {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Reject Request</h3>
+          <p className="text-sm text-gray-600 mb-4">Please provide a reason for rejecting this request.</p>
 
-        <textarea
-          value={rejectionReason}
-          onChange={(e) => setRejectionReason(e.target.value)}
-          placeholder="Enter rejection reason..."
-          className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 mb-4"
-          rows={4}
-        />
+          <textarea
+            ref={reasonInputRef}
+            placeholder="Enter rejection reason..."
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 mb-4"
+            rows={4}
+          />
 
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={() => setShowRejectionModal(false)}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleReject}
-            disabled={isSubmitting}
-            className={`px-4 py-2 rounded-md text-white ${isSubmitting ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700'}`}
-          >
-            {isSubmitting ? 'Processing...' : 'Submit'}
-          </button>
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => setShowRejectionModal(false)}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleReject}
+              disabled={isSubmitting}
+              className={`px-4 py-2 rounded-md text-white ${isSubmitting ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700'}`}
+            >
+              {isSubmitting ? 'Processing...' : 'Submit'}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

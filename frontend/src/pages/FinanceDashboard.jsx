@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { assets } from '../assets/assets';
 import { getApiWithToken } from '../utils/axios';
 
 const FinanceDashboard = () => {
+  const location = useLocation();
+
   // State for requests data
   const [requests, setRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
@@ -35,6 +37,15 @@ const FinanceDashboard = () => {
     name: 'Finance Department',
     officer: 'Nimal Perera'
   });
+
+  // Check for refresh parameter in URL
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('refresh') === 'true') {
+      console.log('Refresh parameter detected, triggering refresh');
+      fetchRequests();
+    }
+  }, [location.search]);
 
   // Function to fetch requests data
   const fetchRequests = async () => {
@@ -240,12 +251,9 @@ const FinanceDashboard = () => {
     try {
       const api = await getApiWithToken();
 
-      // In a real implementation, we would first request an OTP
-      // For now, we'll simulate approval directly
       const response = await api.post(`/api/forms/${id}/action`, {
         action: 'approve',
-        comments: 'Approved by finance officer',
-        otp: '123456' // In a real app, this would be entered by the user after receiving it via email
+        comments: 'Approved by finance officer'
       });
 
       if (response.data && response.data.success) {
@@ -282,12 +290,9 @@ const FinanceDashboard = () => {
 
       const api = await getApiWithToken();
 
-      // In a real implementation, we would first request an OTP
-      // For now, we'll simulate rejection directly
       const response = await api.post(`/api/forms/${id}/action`, {
         action: 'reject',
-        comments: reason,
-        otp: '123456' // In a real app, this would be entered by the user after receiving it via email
+        comments: reason
       });
 
       if (response.data && response.data.success) {

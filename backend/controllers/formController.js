@@ -199,104 +199,153 @@ export const verifyAndSubmitForm = async (req, res) => {
 // Handle form approval/rejection
 export const handleFormAction = async (req, res) => {
   try {
-    const { formId, action, comments, otp } = req.body;
+    const { action, comments, userRole } = req.body;
+    const formId = req.body.formId || req.params.formId;
     const user = req.user;
 
-    // For development mode, skip OTP verification if a special bypass code is used
-    const isDevelopmentMode = process.env.NODE_ENV === 'development';
-    const isOtpBypass = isDevelopmentMode && otp === '123456';
+    console.log('==== FORM ACTION REQUEST ====');
+    console.log('Request params:', req.params);
+    console.log('Request body:', req.body);
+    console.log('Form ID:', formId);
+    console.log('Action:', action);
+    console.log('User role from request:', userRole);
+    console.log('User from middleware:', user);
 
-    if (!isOtpBypass) {
-      // Verify OTP first
-      const otpRecord = await OTP.findOne({
-        email: user.email,
-        otp,
-        purpose: action === 'approve' ? 'approval' : 'rejection',
-        formId,
-        createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
-      });
+    // Use the provided userRole if available, otherwise fall back to user.role
+    const role = userRole || user.role;
+    console.log('Using role for action:', role);
 
-      if (!otpRecord) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid or expired OTP'
-        });
-      }
-    } else {
-      console.log('Development mode: OTP verification bypassed');
-    }
-
+    // Find the form
+    console.log('Looking for form with ID:', formId);
     const form = await Form.findById(formId);
+
     if (!form) {
+      console.log(`Form with ID ${formId} not found`);
       return res.status(404).json({
         success: false,
         message: 'Form not found'
       });
     }
 
+    console.log('Found form:', {
+      id: form._id,
+      type: form.formType,
+      status: form.status,
+      submittedBy: form.submittedBy
+    });
+
     if (action === 'approve') {
-      if (user.role === 'department_head') {
+      console.log(`Processing APPROVAL with role: ${role}`);
+
+      if (role === 'department_head') {
+        console.log('Processing as DEPARTMENT HEAD approval');
         // HOD approval
         form.status = 'pending_finance_approval';
+        form.approvalDetails = form.approvalDetails || {};
         form.approvalDetails.hodApproval = {
           approvedBy: user.email,
           approvedAt: new Date(),
           comments
         };
         form.currentApproverEmail = process.env.FINANCE_OFFICER;
+        form.otpVerification = form.otpVerification || {};
         form.otpVerification.hodVerified = true;
 
+        console.log('Updated form status to pending_finance_approval');
+        console.log('Current approver set to:', process.env.FINANCE_OFFICER);
+
         // Notify finance officer
-        await sendFormNotification(
-          form.currentApproverEmail,
-          'form_approved_by_hod',
-          form
-        );
-      } else if (user.role === 'finance_officer') {
+        try {
+          await sendFormNotification(
+            form.currentApproverEmail,
+            'form_approved_by_hod',
+            form
+          );
+          console.log('Notification sent to finance officer');
+        } catch (notifyError) {
+          console.error('Error sending notification:', notifyError);
+        }
+      } else if (role === 'finance_officer') {
+        console.log('Processing as FINANCE OFFICER approval');
         // Finance approval
         form.status = 'approved';
+        form.approvalDetails = form.approvalDetails || {};
         form.approvalDetails.financeApproval = {
           approvedBy: user.email,
           approvedAt: new Date(),
           comments
         };
+        form.otpVerification = form.otpVerification || {};
         form.otpVerification.financeVerified = true;
 
+        console.log('Updated form status to approved');
+
         // Notify user
-        await sendFormNotification(
-          form.submittedBy.email,
-          'form_approved_by_finance',
-          form
-        );
+        try {
+          await sendFormNotification(
+            form.submittedBy.email,
+            'form_approved_by_finance',
+            form
+          );
+          console.log(`Notification sent to submitter: ${form.submittedBy.email}`);
+        } catch (notifyError) {
+          console.error('Error sending notification:', notifyError);
+        }
+      } else {
+        console.log(`Unknown role for approval: ${role}`);
+        return res.status(400).json({
+          success: false,
+          message: `Invalid role for approval: ${role}`
+        });
       }
-    } else {
+    } else if (action === 'reject') {
+      console.log(`Processing REJECTION with role: ${role}`);
       // Rejection
       form.status = 'rejected';
       form.rejectionDetails = {
         rejectedBy: user.email,
         rejectedAt: new Date(),
         reason: comments,
-        stage: user.role === 'department_head' ? 'hod' : 'finance'
+        stage: role === 'department_head' ? 'hod' : 'finance'
       };
 
+      console.log('Updated form status to rejected');
+      console.log('Rejection details:', form.rejectionDetails);
+
       // Notify user
-      await sendFormNotification(
-        form.submittedBy.email,
-        'form_rejected',
-        form
-      );
+      try {
+        await sendFormNotification(
+          form.submittedBy.email,
+          'form_rejected',
+          form
+        );
+        console.log(`Rejection notification sent to submitter: ${form.submittedBy.email}`);
+      } catch (notifyError) {
+        console.error('Error sending rejection notification:', notifyError);
+      }
+    } else {
+      console.log(`Invalid action: ${action}`);
+      return res.status(400).json({
+        success: false,
+        message: `Invalid action: ${action}`
+      });
     }
 
+    console.log('Saving form with updated status:', form.status);
     await form.save();
+    console.log('Form saved successfully');
+    console.log('==== FORM ACTION COMPLETED ====');
 
     res.status(200).json({
       success: true,
-      message: `Form ${action}d successfully`
+      message: `Form ${action}d successfully`,
+      updatedStatus: form.status
     });
   } catch (error) {
+    console.error('Error processing form action:', error);
     res.status(500).json({
       success: false,
-      message: `Error ${action}ing form`,
+      message: `Error ${req.body.action || 'processing'}ing form`,
       error: error.message
     });
   }

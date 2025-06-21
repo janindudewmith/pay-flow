@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { assets } from '../assets/assets';
 import { getApiWithToken } from '../utils/axios';
 import { useUser } from '@clerk/clerk-react';
@@ -7,6 +7,7 @@ import { useUser } from '@clerk/clerk-react';
 const HeadDashboard = () => {
   // Get current user from Clerk
   const { user } = useUser();
+  const location = useLocation();
 
   // State for requests data
   const [requests, setRequests] = useState([]);
@@ -90,6 +91,15 @@ const HeadDashboard = () => {
     }
   }, [userDepartment, adminName]);
 
+  // Check for refresh parameter in URL
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('refresh') === 'true') {
+      console.log('Refresh parameter detected, triggering refresh');
+      fetchRequests();
+    }
+  }, [location.search]);
+
   // Function to fetch requests data
   const fetchRequests = async () => {
     setIsRefreshing(true);
@@ -158,7 +168,7 @@ const HeadDashboard = () => {
             userEmail: form.submittedBy?.email || 'unknown@example.com',
             submittedAt: form.createdAt || new Date().toISOString(),
             status: form.status === 'pending_hod_approval' ? 'pending' :
-              form.status === 'pending_finance_approval' ? 'approved' : form.status,
+              form.status === 'pending_finance_approval' ? 'pending_finance' : form.status,
             currentApprover: form.status === 'pending_hod_approval' ? 'department_head' : 'finance_officer',
             amount: amount,
             formData: {
@@ -188,7 +198,9 @@ const HeadDashboard = () => {
 
         // Calculate stats
         const pendingCount = departmentForms.filter(req => req.status === 'pending').length;
-        const approvedCount = departmentForms.filter(req => req.status === 'approved').length;
+        const approvedCount = departmentForms.filter(req =>
+          req.status === 'approved' || req.status === 'pending_finance'
+        ).length;
         const rejectedCount = departmentForms.filter(req => req.status === 'rejected').length;
 
         setStats({
@@ -295,12 +307,9 @@ const HeadDashboard = () => {
     try {
       const api = await getApiWithToken();
 
-      // In a real implementation, we would first request an OTP
-      // For now, we'll simulate approval directly
       const response = await api.post(`/api/forms/${id}/action`, {
         action: 'approve',
-        comments: 'Approved by department head',
-        otp: '123456' // In a real app, this would be entered by the user after receiving it via email
+        comments: 'Approved by department head'
       });
 
       if (response.data && response.data.success) {
@@ -310,7 +319,7 @@ const HeadDashboard = () => {
         setRequests(prevRequests =>
           prevRequests.map(req =>
             req.id === id
-              ? { ...req, status: 'approved', currentApprover: 'finance_officer' }
+              ? { ...req, status: 'pending_finance', currentApprover: 'finance_officer' }
               : req
           )
         );
@@ -337,12 +346,9 @@ const HeadDashboard = () => {
 
       const api = await getApiWithToken();
 
-      // In a real implementation, we would first request an OTP
-      // For now, we'll simulate rejection directly
       const response = await api.post(`/api/forms/${id}/action`, {
         action: 'reject',
-        comments: reason,
-        otp: '123456' // In a real app, this would be entered by the user after receiving it via email
+        comments: reason
       });
 
       if (response.data && response.data.success) {

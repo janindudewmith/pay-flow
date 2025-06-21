@@ -3,16 +3,36 @@ import { useNavigate, Link } from 'react-router-dom';
 import { assets } from '../assets/assets';
 
 const AdminLogin = () => {
+  // Define admin accounts with hardcoded credentials for all department heads
   const adminAccounts = [
+    // Department Heads
     {
-      email: import.meta.env.VITE_ADMIN1_EMAIL,
-      password: import.meta.env.VITE_ADMIN1_PASSWORD,
-      role: import.meta.env.VITE_ADMIN1_ROLE
+      email: import.meta.env.VITE_ADMIN_EIE_EMAIL,
+      password: import.meta.env.VITE_ADMIN_EIE_PASSWORD,
+      role: import.meta.env.VITE_ADMIN_EIE_ROLE,
+      department: import.meta.env.VITE_ADMIN_EIE_DEPARTMENT,
+      name: import.meta.env.VITE_ADMIN_EIE_NAME
     },
     {
-      email: import.meta.env.VITE_ADMIN2_EMAIL,
-      password: import.meta.env.VITE_ADMIN2_PASSWORD,
-      role: import.meta.env.VITE_ADMIN2_ROLE
+      email: import.meta.env.VITE_ADMIN_CEE_EMAIL,
+      password: import.meta.env.VITE_ADMIN_CEE_PASSWORD,
+      role: import.meta.env.VITE_ADMIN_CEE_ROLE,
+      department: import.meta.env.VITE_ADMIN_CEE_DEPARTMENT,
+      name: import.meta.env.VITE_ADMIN_CEE_NAME
+    },
+    {
+      email: import.meta.env.VITE_ADMIN_MME_EMAIL,
+      password: import.meta.env.VITE_ADMIN_MME_PASSWORD,
+      role: import.meta.env.VITE_ADMIN_MME_ROLE,
+      department: import.meta.env.VITE_ADMIN_MME_DEPARTMENT,
+      name: import.meta.env.VITE_ADMIN_MME_NAME
+    },
+    // Finance Officer
+    {
+      email: import.meta.env.VITE_ADMIN_FINANCE_EMAIL,
+      password: import.meta.env.VITE_ADMIN_FINANCE_PASSWORD,
+      role: import.meta.env.VITE_ADMIN_FINANCE_ROLE,
+      name: import.meta.env.VITE_ADMIN_FINANCE_NAME
     }
   ];
 
@@ -39,6 +59,13 @@ const AdminLogin = () => {
         localStorage.setItem('adminToken', 'dummy-token');
         localStorage.setItem('adminRole', matchedAdmin.role);
 
+        // Store additional information about the admin
+        if (matchedAdmin.department) {
+          localStorage.setItem('adminDepartment', matchedAdmin.department);
+        }
+        localStorage.setItem('adminName', matchedAdmin.name);
+        localStorage.setItem('adminEmail', matchedAdmin.email);
+
         if (matchedAdmin.role === 'department_head') {
           navigate('/department/dashboard');
         } else if (matchedAdmin.role === 'finance_officer') {
@@ -50,6 +77,8 @@ const AdminLogin = () => {
     } catch (error) {
       setError('An error occurred. Please try again.');
       console.error('Login error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 

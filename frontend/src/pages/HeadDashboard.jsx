@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { assets } from '../assets/assets';
 import { getApiWithToken } from '../utils/axios';
+import { useUser } from '@clerk/clerk-react';
 
 const HeadDashboard = () => {
+  // Get current user from Clerk
+  const { user } = useUser();
+
   // State for requests data
   const [requests, setRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
@@ -30,12 +34,61 @@ const HeadDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [requestsPerPage] = useState(10);
 
-  // Department head info (would come from auth context in a real app)
+  // Function to detect department from email
+  const getDepartmentFromEmail = (email) => {
+    if (!email) return null;
+
+    const lowerEmail = email.toLowerCase();
+    if (lowerEmail.includes('head.eie')) return 'EIE';
+    if (lowerEmail.includes('head.cee')) return 'CEE';
+    if (lowerEmail.includes('head.mme')) return 'MME';
+
+    // For regular users
+    if (lowerEmail.includes('eie')) return 'EIE';
+    if (lowerEmail.includes('cee')) return 'CEE';
+    if (lowerEmail.includes('mme')) return 'MME';
+
+    return null;
+  };
+
+  // Get department from localStorage or user email
+  const adminDepartment = localStorage.getItem('adminDepartment');
+  const adminEmail = localStorage.getItem('adminEmail');
+  const adminName = localStorage.getItem('adminName');
+
+  const userDepartment = adminDepartment || (user ? getDepartmentFromEmail(user.primaryEmailAddress?.emailAddress) : null);
+
+  // Department head info
   const [departmentInfo, setDepartmentInfo] = useState({
     name: 'Electrical & Information Engineering',
     code: 'eie',
-    head: 'Prof. Samantha Perera'
+    head: 'Dr. Rajitha Udawalpola'
   });
+
+  // Update department info based on admin department or user's email
+  useEffect(() => {
+    if (userDepartment) {
+      if (userDepartment === 'EIE') {
+        setDepartmentInfo({
+          name: 'Electrical & Information Engineering',
+          code: 'eie',
+          head: adminName || 'Dr. Rajitha Udawalpola'
+        });
+      } else if (userDepartment === 'CEE') {
+        setDepartmentInfo({
+          name: 'Civil & Environmental Engineering',
+          code: 'cee',
+          head: adminName || 'Dr. T.N. Wickramarachchi'
+        });
+      } else if (userDepartment === 'MME') {
+        setDepartmentInfo({
+          name: 'Mechanical & Manufacturing Engineering',
+          code: 'mme',
+          head: adminName || 'Dr. B. Annasiwaththa'
+        });
+      }
+    }
+  }, [userDepartment, adminName]);
 
   // Function to fetch requests data
   const fetchRequests = async () => {
@@ -120,12 +173,23 @@ const HeadDashboard = () => {
 
         console.log('HeadDashboard: Transformed data:', transformedData);
 
-        setRequests(transformedData);
+        // Filter forms based on department
+        let departmentForms = transformedData;
+        if (userDepartment) {
+          departmentForms = transformedData.filter(form => {
+            const emailDepartment = getDepartmentFromEmail(form.userEmail);
+            return emailDepartment === userDepartment;
+          });
+
+          console.log(`HeadDashboard: Filtered forms for ${userDepartment} department:`, departmentForms);
+        }
+
+        setRequests(departmentForms);
 
         // Calculate stats
-        const pendingCount = transformedData.filter(req => req.status === 'pending').length;
-        const approvedCount = transformedData.filter(req => req.status === 'approved').length;
-        const rejectedCount = transformedData.filter(req => req.status === 'rejected').length;
+        const pendingCount = departmentForms.filter(req => req.status === 'pending').length;
+        const approvedCount = departmentForms.filter(req => req.status === 'approved').length;
+        const rejectedCount = departmentForms.filter(req => req.status === 'rejected').length;
 
         setStats({
           pendingRequests: pendingCount,
@@ -151,7 +215,7 @@ const HeadDashboard = () => {
   useEffect(() => {
     setIsLoading(true);
     fetchRequests();
-  }, [departmentInfo.code]);
+  }, [departmentInfo.code, userDepartment]);
 
   // Handle manual refresh
   const handleRefresh = () => {

@@ -10,7 +10,9 @@ const Navbar = ({ title }) => {
   const location = useLocation();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const modalRef = useRef(null);
+  const mobileMenuRef = useRef(null);
   const firstModalLinkRef = useRef(null);
   const isRequestsPage = location.pathname === '/requests';
   const isAdminLoginPage = location.pathname === '/admin-login';
@@ -23,25 +25,36 @@ const Navbar = ({ title }) => {
     { title: 'Overtime Payment', link: '/request-payment/overtime', description: 'Request payment for extra hours worked', icon: '⏰' },
   ];
 
-  // Click outside & ESC key handling
+  // Navigation links
+  const navLinks = [
+    { title: 'Home', path: '/' },
+    { title: 'About Us', path: '/about' },
+    { title: 'Contact Us', path: '/contact' },
+  ];
+
+  // Click outside & ESC key handling for modal
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         setIsModalOpen(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setIsMobileMenuOpen(false);
       }
     };
 
     const handleEsc = (event) => {
       if (event.key === 'Escape') {
         setIsModalOpen(false);
+        setIsMobileMenuOpen(false);
       }
     };
 
-    if (isModalOpen) {
+    if (isModalOpen || isMobileMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleEsc);
       document.body.style.overflow = 'hidden'; // lock scroll
-      firstModalLinkRef.current?.focus();
+      if (isModalOpen) firstModalLinkRef.current?.focus();
     } else {
       document.body.style.overflow = ''; // unlock scroll
     }
@@ -50,7 +63,7 @@ const Navbar = ({ title }) => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEsc);
     };
-  }, [isModalOpen]);
+  }, [isModalOpen, isMobileMenuOpen]);
 
   const handleAdminLogin = () => navigate('/admin-login');
   const handleRegularLogin = () => {
@@ -63,11 +76,17 @@ const Navbar = ({ title }) => {
     ? "opacity-100 visible scale-100"
     : "opacity-0 invisible scale-95";
 
+  // Check if a nav link is active
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
   return (
     <>
       <div className={`shadow py-0 relative z-20 bg-white ${isModalOpen ? 'backdrop-blur-sm' : ''}`}>
         <div className="container px-4 2xl:px-20 mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
+          {/* Logo and Request Payment Button (when logged in) */}
+          <div className="flex items-center gap-2">
             <Link to="/" className="cursor-pointer">
               <img src={assets.logo} alt="Logo" />
             </Link>
@@ -75,7 +94,7 @@ const Navbar = ({ title }) => {
             {user && !isAdminLoginPage && (
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="bg-gradient-to-r from-blue-900 to-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap group"
+                className="bg-gradient-to-r from-blue-900 to-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap group ml-4 hidden sm:flex"
               >
                 <span>Request New Payment</span>
                 <svg
@@ -92,14 +111,47 @@ const Navbar = ({ title }) => {
             )}
           </div>
 
+          {/* Navigation Links - Centered when user is logged in */}
+          <div className={`hidden md:flex items-center space-x-1 ${user ? 'mx-auto' : 'ml-6'}`}>
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`px-4 py-5 transition-all duration-200 font-medium relative group ${isActive(link.path)
+                  ? 'text-blue-600'
+                  : 'text-gray-700 hover:text-blue-600'
+                  }`}
+              >
+                {link.title}
+                <span className={`absolute bottom-0 left-0 w-full h-1 bg-blue-600 transform transition-transform duration-300 ${isActive(link.path) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                  }`}></span>
+              </Link>
+            ))}
+          </div>
+
           {title && <div className="text-xl font-semibold">{title}</div>}
 
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden text-gray-600 focus:outline-none"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              {isMobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+
+          {/* User Profile or Login Buttons */}
           {user ? (
-            <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-3">
               <Link
                 className={`transition-colors duration-200 ${isRequestsPage
-                    ? 'text-blue-600 font-medium border-b-2 border-blue-600 pb-1'
-                    : 'hover:text-blue-600 hover:border-b-2 hover:border-blue-600 pb-1'
+                  ? 'text-blue-600 font-medium border-b-2 border-blue-600 pb-1'
+                  : 'hover:text-blue-600 hover:border-b-2 hover:border-blue-600 pb-1'
                   }`}
                 to={'/requests'}
               >
@@ -110,7 +162,7 @@ const Navbar = ({ title }) => {
               <UserButton />
             </div>
           ) : (
-            <div className="flex gap-4 max-sm:text-sm">
+            <div className="hidden md:flex gap-4 max-sm:text-sm">
               <button onClick={handleAdminLogin} className="text-gray-600 hover:text-blue-600">
                 Admin Login
               </button>
@@ -123,12 +175,111 @@ const Navbar = ({ title }) => {
             </div>
           )}
         </div>
+
+        {/* Mobile Menu */}
+        <div
+          ref={mobileMenuRef}
+          className={`fixed inset-y-0 right-0 z-40 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
+        >
+          <div className="p-5">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-800">Menu</h2>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-gray-500 hover:text-gray-800"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`block px-4 py-2 rounded-lg transition-colors ${isActive(link.path)
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                    }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.title}
+                </Link>
+              ))}
+
+              {user && (
+                <>
+                  <Link
+                    to="/requests"
+                    className={`block px-4 py-2 rounded-lg transition-colors ${isRequestsPage
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                      }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    My Requests
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setIsModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full mt-2 bg-gradient-to-r from-blue-900 to-blue-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2"
+                  >
+                    <span>Request New Payment</span>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </>
+              )}
+
+              {!user && (
+                <div className="pt-4 mt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      handleRegularLogin();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg mb-3"
+                  >
+                    Login
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleAdminLogin();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg"
+                  >
+                    Admin Login
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Backdrop overlay for modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
+      )}
 
       {/* Modal Dialog */}
       <div
         ref={modalRef}
-        className={`border border-blue-200 fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-xl p-6 shadow-2xl z-30 transition-all duration-300 ease-out ${modalAnimation}`}
+        className={`border border-blue-200 fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-xl p-6 shadow-2xl z-50 transition-all duration-300 ease-out ${modalAnimation}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"

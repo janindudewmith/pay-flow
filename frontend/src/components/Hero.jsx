@@ -336,7 +336,7 @@ const Hero = () => {
           <div className="relative z-10 mb-16">
             <div className="flex flex-col md:flex-row md:items-center">
               <div className="md:w-1/2 md:pr-8">
-                <h3 className="md:text-left text-center text-2xl md:text-3xl font-bold text-gray-800 tracking-tight mb-2 whitespace-nowrap">
+                <h3 className="md:text-left text-center text-2xl md:text-3xl font-bold text-gray-800 mb-2 whitespace-nowrap">
                   Take Control of Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 animate-gradient">Faculty Financials</span>
                 </h3>
 

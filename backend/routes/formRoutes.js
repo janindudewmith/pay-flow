@@ -23,9 +23,24 @@ router.post('/verify-and-submit', authMiddleware, verifyAndSubmitForm);
 
 // Form action routes (approve/reject)
 router.post('/:formId/action', authMiddleware, async (req, res) => {
-  // Add the formId from URL params to the request body
-  req.body.formId = req.params.formId;
-  return handleFormAction(req, res);
+  try {
+    // Add the formId from URL params to the request body if not already present
+    if (!req.body.formId) {
+      req.body.formId = req.params.formId;
+    }
+
+    console.log('Form action route - formId from params:', req.params.formId);
+    console.log('Form action route - formId in body:', req.body.formId);
+
+    return handleFormAction(req, res);
+  } catch (error) {
+    console.error('Error in form action route:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error processing form action',
+      error: error.message
+    });
+  }
 });
 
 // Form retrieval routes

@@ -8,20 +8,39 @@ dotenv.config();
 const getRoleFromEmail = (email) => {
   if (!email) return 'user';
 
-  // Finance officer email check
-  if (email === process.env.FINANCE_OFFICER || email.includes('finance')) {
+  console.log('Determining role from email:', email);
+
+  const emailLower = email.toLowerCase();
+
+  // Finance officer email check - more comprehensive
+  if (
+    emailLower === (process.env.FINANCE_OFFICER || '').toLowerCase() ||
+    emailLower.includes('finance') ||
+    emailLower.includes('treasurer') ||
+    emailLower.includes('bursar') ||
+    emailLower.includes('accounts@') ||
+    emailLower.includes('accounting@')
+  ) {
+    console.log('Role determined: finance_officer');
     return 'finance_officer';
   }
 
-  // Department head email check
-  if (email === process.env.HOD_EIE ||
-    email === process.env.HOD_CEE ||
-    email === process.env.HOD_MME ||
-    email.includes('hod') ||
-    email.includes('head')) {
+  // Department head email check - more comprehensive
+  if (
+    emailLower === (process.env.HOD_EIE || '').toLowerCase() ||
+    emailLower === (process.env.HOD_CEE || '').toLowerCase() ||
+    emailLower === (process.env.HOD_MME || '').toLowerCase() ||
+    emailLower.includes('hod') ||
+    emailLower.includes('head') ||
+    emailLower.includes('dean') ||
+    emailLower.includes('director') ||
+    emailLower.includes('chair')
+  ) {
+    console.log('Role determined: department_head');
     return 'department_head';
   }
 
+  console.log('Role determined: user');
   return 'user';
 };
 

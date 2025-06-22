@@ -105,38 +105,6 @@ app.get('/api/test-clerk', async (req, res) => {
   }
 });
 
-app.get('/api/test-email', async (req, res) => {
-  try {
-    await sendFormNotification(
-      process.env.EMAIL_USER, // send to yourself for testing
-      'new_form_submission', // valid notification type
-      {
-        formType: 'test_form',
-        submittedBy: {
-          fullName: 'Test User',
-          department: 'Test Department',
-          email: process.env.EMAIL_USER
-        },
-        formData: {
-          basicInfo: {
-            requestorName: 'Test User',
-            position: 'Test Position',
-            department: 'Test Department',
-            dateRequested: new Date().toISOString(),
-            amountRs: '1000',
-            amountCts: '00',
-            expectedSpendingDate: new Date().toISOString(),
-            reasonForRequest: 'Testing email functionality'
-          }
-        }
-      }
-    );
-    res.json({ success: true, message: 'Test email sent!' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
 // 404 handler
 app.use((req, res, next) => {
   res.status(404).json({

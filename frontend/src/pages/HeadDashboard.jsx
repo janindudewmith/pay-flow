@@ -307,13 +307,24 @@ const HeadDashboard = () => {
     try {
       const api = await getApiWithToken();
 
-      const response = await api.post(`/api/forms/${id}/action`, {
+      console.log('Approving request with ID:', id);
+
+      // Prepare the approval payload
+      const payload = {
+        formId: id, // Explicitly include formId in the request body
         action: 'approve',
-        comments: 'Approved by department head'
-      });
+        comments: 'Approved by department head',
+        userRole: 'department_head' // Explicitly set the role
+      };
+
+      console.log('Sending approval payload:', payload);
+
+      const response = await api.post(`/api/forms/${id}/action`, payload);
+
+      console.log('Approval response:', response.data);
 
       if (response.data && response.data.success) {
-        alert(`Request ${id} approved successfully!`);
+        alert(`Request ${id} approved successfully! New status: ${response.data.updatedStatus || 'updated'}`);
 
         // Update the local state to reflect the change
         setRequests(prevRequests =>
@@ -327,14 +338,21 @@ const HeadDashboard = () => {
         // Update stats
         setStats(prevStats => ({
           ...prevStats,
-          pendingRequests: prevStats.pendingRequests - 1,
+          pendingRequests: Math.max(0, prevStats.pendingRequests - 1),
           approvedRequests: prevStats.approvedRequests + 1
         }));
+
+        // Force a refresh to ensure data is up to date
+        setTimeout(() => {
+          console.log('Refreshing data after approval');
+          fetchRequests();
+        }, 1000); // Short delay to ensure database has updated
       } else {
-        alert('Failed to approve request. Please try again.');
+        alert(`Failed to approve request: ${response.data?.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error approving request:', error);
+      console.error('Error details:', error.response?.data || 'No response data');
       alert(`Error: ${error.response?.data?.message || error.message}`);
     }
   };
@@ -346,13 +364,24 @@ const HeadDashboard = () => {
 
       const api = await getApiWithToken();
 
-      const response = await api.post(`/api/forms/${id}/action`, {
+      console.log('Rejecting request with ID:', id);
+
+      // Prepare the rejection payload
+      const payload = {
+        formId: id, // Explicitly include formId in the request body
         action: 'reject',
-        comments: reason
-      });
+        comments: reason,
+        userRole: 'department_head' // Explicitly set the role
+      };
+
+      console.log('Sending rejection payload:', payload);
+
+      const response = await api.post(`/api/forms/${id}/action`, payload);
+
+      console.log('Rejection response:', response.data);
 
       if (response.data && response.data.success) {
-        alert(`Request ${id} rejected successfully!`);
+        alert(`Request ${id} rejected successfully! New status: ${response.data.updatedStatus || 'rejected'}`);
 
         // Update the local state to reflect the change
         setRequests(prevRequests =>
@@ -366,14 +395,21 @@ const HeadDashboard = () => {
         // Update stats
         setStats(prevStats => ({
           ...prevStats,
-          pendingRequests: prevStats.pendingRequests - 1,
+          pendingRequests: Math.max(0, prevStats.pendingRequests - 1),
           rejectedRequests: prevStats.rejectedRequests + 1
         }));
+
+        // Force a refresh to ensure data is up to date
+        setTimeout(() => {
+          console.log('Refreshing data after rejection');
+          fetchRequests();
+        }, 1000); // Short delay to ensure database has updated
       } else {
-        alert('Failed to reject request. Please try again.');
+        alert(`Failed to reject request: ${response.data?.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error rejecting request:', error);
+      console.error('Error details:', error.response?.data || 'No response data');
       alert(`Error: ${error.response?.data?.message || error.message}`);
     }
   };

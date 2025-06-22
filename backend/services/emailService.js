@@ -4,13 +4,6 @@ import OTP from '../models/OTP.js';
 
 dotenv.config();
 
-// Log email configuration (without exposing sensitive data)
-console.log('=== Email Service Configuration ===');
-console.log('SMTP Host:', 'smtp.gmail.com');
-console.log('SMTP Port:', 587);
-console.log('Email User:', process.env.EMAIL_USER);
-console.log('Email Password Present:', !!process.env.EMAIL_PASS);
-
 // Create reusable transporter object using SMTP transport
 const transporter = nodemailer.createTransport({
   service: 'gmail',  // Use Gmail service
@@ -26,31 +19,19 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Verify transporter configuration
-transporter.verify(function(error, success) {
-  if (error) {
-    console.error('=== Email Service Configuration Error ===');
-    console.error('Error details:', error);
-    console.error('Please check:');
-    console.error('1. EMAIL_USER and EMAIL_PASS are set in .env');
-    console.error('2. If using Gmail, ensure you have:');
-    console.error('   - Enabled "Less secure app access" or');
-    console.error('   - Created an App Password if using 2FA');
-  } else {
-    console.log('=== Email Service Ready ===');
-    console.log('Server is ready to send messages');
-    console.log('Using email account:', process.env.EMAIL_USER);
-  }
-});
-
 // Helper function to get department head email
 const getHodEmail = (department) => {
+  // Define department head email mapping
   const departmentMap = {
-    'eie': process.env.HOD_EIE,
-    'cee': process.env.HOD_CEE,
-    'mme': process.env.HOD_MME
+    'eie': 'head.eie.ruh@gmail.com',
+    'cee': 'head.cee.ruh@gmail.com',
+    'mme': 'head.mme.ruh@gmail.com'
   };
-  return departmentMap[department] || null;
+
+  // Use environment variables if available, otherwise use hardcoded defaults
+  const hodEmail = process.env[`HOD_${department?.toUpperCase()}`] || departmentMap[department];
+
+  return hodEmail || null;
 };
 
 // Send OTP
@@ -91,18 +72,10 @@ export const sendOTP = async (email, otp, purpose) => {
       `
     };
 
-    console.log('Sending OTP email:', {
-      from: mailOptions.from,
-      to: mailOptions.to,
-      subject: mailOptions.subject
-    });
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log('OTP email sent successfully:', info.messageId);
+    await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
-    console.error('Error sending OTP:', error);
-    throw error;
+    return false;
   }
 };
 
@@ -114,7 +87,7 @@ export const sendFormNotification = async (email, type, form) => {
     // Helper function to format form details
     const formatFormDetails = (formData) => {
       if (!formData) return '';
-      
+
       let details = '';
       if (formData.basicInfo) {
         const info = formData.basicInfo;
@@ -157,18 +130,48 @@ export const sendFormNotification = async (email, type, form) => {
 
     switch (type) {
       case 'new_form_submission':
-        subject = 'New Form Submission';
+        subject = 'New Form Submission Requires Your Approval';
         html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #1a56db;">New Form Submission</h1>
-            <p>A new ${form.formType.replace('_', ' ').toUpperCase()} form has been submitted for your approval.</p>
-            <p><strong>Submitted by:</strong> ${form.submittedBy.fullName}</p>
-            <p><strong>Department:</strong> ${form.submittedBy.department}</p>
-            <p><strong>Email:</strong> ${form.submittedBy.email}</p>
-            ${formatFormDetails(form.formData)}
-            <p style="margin-top: 20px;">Please log in to review the form.</p>
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-              <p style="color: #666; font-size: 12px;">This is an automated message from PayFlow. Please do not reply to this email.</p>
+            <div style="background: linear-gradient(90deg, #1a56db 0%, #2563eb 100%); padding: 24px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #fff; margin: 0; font-size: 1.5rem;">New Form Submission</h1>
+              <p style="color: #e0e7ff; margin-top: 8px; font-size: 1.1rem;">Action Required: Your Approval is Needed</p>
+            </div>
+            
+            <div style="background-color: #fff; padding: 24px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+              <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                <h2 style="color: #1f2937; font-size: 1.2rem; margin-top: 0;">Form Details</h2>
+                <p style="margin-bottom: 8px;"><strong>Form Type:</strong> ${form.formType.replace('_', ' ').toUpperCase()}</p>
+                <p style="margin-bottom: 8px;"><strong>Submitted By:</strong> ${form.submittedBy.fullName}</p>
+                <p style="margin-bottom: 8px;"><strong>Department:</strong> ${form.submittedBy.department.toUpperCase()}</p>
+                <p style="margin-bottom: 8px;"><strong>Email:</strong> ${form.submittedBy.email}</p>
+                <p style="margin-bottom: 8px;"><strong>Submission Date:</strong> ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p style="margin-bottom: 0;"><strong>Form ID:</strong> ${form._id}</p>
+              </div>
+              
+              ${formatFormDetails(form.formData)}
+              
+              <div style="background-color: #ecfdf5; padding: 16px; border-radius: 8px; margin: 24px 0; border-left: 4px solid #059669;">
+                <p style="color: #065f46; margin: 0; font-weight: 500;">This form requires your approval as the Department Head.</p>
+              </div>
+              
+              <div style="text-align: center; margin-top: 32px;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/department/dashboard" 
+                  style="display: inline-block; background: linear-gradient(90deg, #1a56db 0%, #2563eb 100%); color: white; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; text-align: center;">
+                  Review & Approve Form
+                </a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
+                If the button above doesn't work, please log in to the PayFlow system and navigate to your Department Head Dashboard.
+              </p>
+            </div>
+            
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+              <p style="color: #9ca3af; font-size: 12px;">
+                This is an automated message from PayFlow. Please do not reply to this email.<br>
+                &copy; ${new Date().getFullYear()} PayFlow. All rights reserved.
+              </p>
             </div>
           </div>
         `;
@@ -178,12 +181,45 @@ export const sendFormNotification = async (email, type, form) => {
         subject = 'Form Approved by Department Head';
         html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #059669;">Form Approved by Department Head</h1>
-            <p>The ${form.formType.replace('_', ' ').toUpperCase()} form has been approved by the department head.</p>
-            ${formatFormDetails(form.formData)}
-            <p style="margin-top: 20px;">Please log in to review and take necessary action.</p>
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-              <p style="color: #666; font-size: 12px;">This is an automated message from PayFlow. Please do not reply to this email.</p>
+            <div style="background: linear-gradient(90deg, #1a56db 0%, #2563eb 100%); padding: 24px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #fff; margin: 0; font-size: 1.5rem;">Form Approved</h1>
+              <p style="color: #e0e7ff; margin-top: 8px; font-size: 1.1rem;">Your form has been approved by the Department Head</p>
+            </div>
+            
+            <div style="background-color: #fff; padding: 24px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+              <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                <h2 style="color: #1f2937; font-size: 1.2rem; margin-top: 0;">Form Details</h2>
+                <p style="margin-bottom: 8px;"><strong>Form Type:</strong> ${form.formType.replace('_', ' ').toUpperCase()}</p>
+                <p style="margin-bottom: 8px;"><strong>Submitted By:</strong> ${form.submittedBy.fullName}</p>
+                <p style="margin-bottom: 8px;"><strong>Department:</strong> ${form.submittedBy.department.toUpperCase()}</p>
+                <p style="margin-bottom: 8px;"><strong>Status:</strong> Approved by Department Head</p>
+                <p style="margin-bottom: 8px;"><strong>Approval Date:</strong> ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p style="margin-bottom: 0;"><strong>Form ID:</strong> ${form._id}</p>
+              </div>
+              
+              ${formatFormDetails(form.formData)}
+              
+              <div style="background-color: #ecfdf5; padding: 16px; border-radius: 8px; margin: 24px 0; border-left: 4px solid #059669;">
+                <p style="color: #065f46; margin: 0; font-weight: 500;">Your form has been approved by the Department Head and forwarded to the Finance Department for final approval.</p>
+              </div>
+              
+              <div style="text-align: center; margin-top: 32px;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/my-requests" 
+                  style="display: inline-block; background: linear-gradient(90deg, #1a56db 0%, #2563eb 100%); color: white; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; text-align: center;">
+                  View Form Status
+                </a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
+                If the button above doesn't work, please log in to the PayFlow system and navigate to "My Requests".
+              </p>
+            </div>
+            
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+              <p style="color: #9ca3af; font-size: 12px;">
+                This is an automated message from PayFlow. Please do not reply to this email.<br>
+                &copy; ${new Date().getFullYear()} PayFlow. All rights reserved.
+              </p>
             </div>
           </div>
         `;
@@ -193,12 +229,45 @@ export const sendFormNotification = async (email, type, form) => {
         subject = 'Form Approved by Finance';
         html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #059669;">Form Approved</h1>
-            <p>Your ${form.formType.replace('_', ' ').toUpperCase()} form has been approved by the finance department.</p>
-            ${formatFormDetails(form.formData)}
-            <p style="margin-top: 20px;">Thank you for using our system.</p>
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-              <p style="color: #666; font-size: 12px;">This is an automated message from PayFlow. Please do not reply to this email.</p>
+            <div style="background: linear-gradient(90deg, #059669 0%, #10b981 100%); padding: 24px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #fff; margin: 0; font-size: 1.5rem;">Form Fully Approved</h1>
+              <p style="color: #ecfdf5; margin-top: 8px; font-size: 1.1rem;">Your payment request has been approved</p>
+            </div>
+            
+            <div style="background-color: #fff; padding: 24px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+              <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                <h2 style="color: #1f2937; font-size: 1.2rem; margin-top: 0;">Form Details</h2>
+                <p style="margin-bottom: 8px;"><strong>Form Type:</strong> ${form.formType.replace('_', ' ').toUpperCase()}</p>
+                <p style="margin-bottom: 8px;"><strong>Submitted By:</strong> ${form.submittedBy.fullName}</p>
+                <p style="margin-bottom: 8px;"><strong>Department:</strong> ${form.submittedBy.department.toUpperCase()}</p>
+                <p style="margin-bottom: 8px;"><strong>Status:</strong> Fully Approved</p>
+                <p style="margin-bottom: 8px;"><strong>Final Approval Date:</strong> ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p style="margin-bottom: 0;"><strong>Form ID:</strong> ${form._id}</p>
+              </div>
+              
+              ${formatFormDetails(form.formData)}
+              
+              <div style="background-color: #ecfdf5; padding: 16px; border-radius: 8px; margin: 24px 0; border-left: 4px solid #059669;">
+                <p style="color: #065f46; margin: 0; font-weight: 500;">Congratulations! Your payment request has been fully approved. The Finance Department will process your payment according to the details provided.</p>
+              </div>
+              
+              <div style="text-align: center; margin-top: 32px;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/my-requests" 
+                  style="display: inline-block; background: linear-gradient(90deg, #059669 0%, #10b981 100%); color: white; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; text-align: center;">
+                  View Form Details
+                </a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
+                If the button above doesn't work, please log in to the PayFlow system and navigate to "My Requests".
+              </p>
+            </div>
+            
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+              <p style="color: #9ca3af; font-size: 12px;">
+                This is an automated message from PayFlow. Please do not reply to this email.<br>
+                &copy; ${new Date().getFullYear()} PayFlow. All rights reserved.
+              </p>
             </div>
           </div>
         `;
@@ -208,16 +277,51 @@ export const sendFormNotification = async (email, type, form) => {
         subject = 'Form Rejected';
         html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #dc2626;">Form Rejected</h1>
-            <p>Your ${form.formType.replace('_', ' ').toUpperCase()} form has been rejected.</p>
-            ${formatFormDetails(form.formData)}
-            <div style="background-color: #fee2e2; padding: 15px; border-radius: 5px; margin: 20px 0;">
-              <p><strong>Reason for Rejection:</strong> ${form.rejectionDetails.reason}</p>
-              <p><strong>Rejected at Stage:</strong> ${form.rejectionDetails.stage.toUpperCase()}</p>
+            <div style="background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%); padding: 24px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #fff; margin: 0; font-size: 1.5rem;">Form Rejected</h1>
+              <p style="color: #fee2e2; margin-top: 8px; font-size: 1.1rem;">Your payment request requires attention</p>
             </div>
-            <p>Please review the feedback and submit a new form if necessary.</p>
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-              <p style="color: #666; font-size: 12px;">This is an automated message from PayFlow. Please do not reply to this email.</p>
+            
+            <div style="background-color: #fff; padding: 24px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+              <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                <h2 style="color: #1f2937; font-size: 1.2rem; margin-top: 0;">Form Details</h2>
+                <p style="margin-bottom: 8px;"><strong>Form Type:</strong> ${form.formType.replace('_', ' ').toUpperCase()}</p>
+                <p style="margin-bottom: 8px;"><strong>Submitted By:</strong> ${form.submittedBy.fullName}</p>
+                <p style="margin-bottom: 8px;"><strong>Department:</strong> ${form.submittedBy.department.toUpperCase()}</p>
+                <p style="margin-bottom: 8px;"><strong>Status:</strong> Rejected</p>
+                <p style="margin-bottom: 8px;"><strong>Rejection Date:</strong> ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p style="margin-bottom: 0;"><strong>Form ID:</strong> ${form._id}</p>
+              </div>
+              
+              ${formatFormDetails(form.formData)}
+              
+              <div style="background-color: #fee2e2; padding: 16px; border-radius: 8px; margin: 24px 0; border-left: 4px solid #dc2626;">
+                <h3 style="color: #991b1b; margin-top: 0; margin-bottom: 8px; font-size: 1.1rem;">Reason for Rejection</h3>
+                <p style="color: #7f1d1d; margin: 0;">${form.rejectionDetails?.reason || 'No specific reason provided.'}</p>
+                ${form.rejectionDetails?.stage ? `<p style="color: #7f1d1d; margin-top: 8px; margin-bottom: 0;"><strong>Rejected at Stage:</strong> ${form.rejectionDetails.stage.replace('_', ' ').toUpperCase()}</p>` : ''}
+              </div>
+              
+              <p style="font-size: 16px; line-height: 1.6; color: #374151;">
+                Please review the feedback above and submit a new form with the necessary corrections if required.
+              </p>
+              
+              <div style="text-align: center; margin-top: 32px;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/my-requests" 
+                  style="display: inline-block; background: linear-gradient(90deg, #1a56db 0%, #2563eb 100%); color: white; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; text-align: center;">
+                  View Form Details
+                </a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
+                If the button above doesn't work, please log in to the PayFlow system and navigate to "My Requests".
+              </p>
+            </div>
+            
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+              <p style="color: #9ca3af; font-size: 12px;">
+                This is an automated message from PayFlow. Please do not reply to this email.<br>
+                &copy; ${new Date().getFullYear()} PayFlow. All rights reserved.
+              </p>
             </div>
           </div>
         `;
@@ -234,19 +338,10 @@ export const sendFormNotification = async (email, type, form) => {
       html
     };
 
-    console.log('Sending form notification:', {
-      from: mailOptions.from,
-      to: mailOptions.to,
-      subject: mailOptions.subject,
-      type
-    });
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Form notification email sent successfully:', info.messageId);
+    await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
-    console.error('Error sending notification:', error);
-    throw error;
+    return false;
   }
 };
 
@@ -257,183 +352,209 @@ export const sendRejectionNotification = async (email, formType, reason) => {
       to: email,
       subject: `Form Rejected - ${formType}`,
       html: `
-        <h1>Form Rejected</h1>
-        <p>Your ${formType} form has been rejected.</p>
-        <p>Reason for rejection: ${reason}</p>
-        <p>Please review the feedback and submit a new form if necessary.</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%); padding: 24px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="color: #fff; margin: 0; font-size: 1.5rem;">Form Rejected</h1>
+            <p style="color: #fee2e2; margin-top: 8px; font-size: 1.1rem;">Your payment request requires attention</p>
+          </div>
+          
+          <div style="background-color: #fff; padding: 24px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+              <h2 style="color: #1f2937; font-size: 1.2rem; margin-top: 0;">Form Details</h2>
+              <p style="margin-bottom: 8px;"><strong>Form Type:</strong> ${formType.replace('_', ' ').toUpperCase()}</p>
+              <p style="margin-bottom: 8px;"><strong>Status:</strong> Rejected</p>
+              <p style="margin-bottom: 0;"><strong>Rejection Date:</strong> ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
+            
+            <div style="background-color: #fee2e2; padding: 16px; border-radius: 8px; margin: 24px 0; border-left: 4px solid #dc2626;">
+              <h3 style="color: #991b1b; margin-top: 0; margin-bottom: 8px; font-size: 1.1rem;">Reason for Rejection</h3>
+              <p style="color: #7f1d1d; margin: 0;">${reason || 'No specific reason provided.'}</p>
+            </div>
+            
+            <p style="font-size: 16px; line-height: 1.6; color: #374151;">
+              Please review the feedback above and submit a new form with the necessary corrections if required.
+            </p>
+            
+            <div style="text-align: center; margin-top: 32px;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/my-requests" 
+                style="display: inline-block; background: linear-gradient(90deg, #1a56db 0%, #2563eb 100%); color: white; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; text-align: center;">
+                View My Requests
+              </a>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
+              If the button above doesn't work, please log in to the PayFlow system and navigate to "My Requests".
+            </p>
+          </div>
+          
+          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <p style="color: #9ca3af; font-size: 12px;">
+              This is an automated message from PayFlow. Please do not reply to this email.<br>
+              &copy; ${new Date().getFullYear()} PayFlow. All rights reserved.
+            </p>
+          </div>
+        </div>
       `
     };
 
-    console.log('Sending rejection notification:', {
-      from: mailOptions.from,
-      to: mailOptions.to,
-      subject: mailOptions.subject
-    });
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Rejection notification email sent successfully:', info.messageId);
+    await transporter.sendMail(mailOptions);
+    return true;
   } catch (error) {
-    console.error('Error sending rejection notification:', error);
-    throw error;
+    return false;
   }
 };
 
-export const sendSimpleEmail = async (to, subject, text, formData = null) => {
+// Simple email sending function
+export const sendSimpleEmail = async (to, subject, text, data = {}) => {
   try {
-    console.log('=== Sending Simple Email ===');
-    console.log('To:', to);
-    console.log('Subject:', subject);
-    console.log('From:', process.env.EMAIL_USER);
+    // Check if this is a form submission confirmation
+    const isFormConfirmation = subject.includes('Form Submission Confirmation');
 
-    let html = '';
-    if (formData) {
-      // Format form details for admin notification
-      const info = formData.basicInfo || formData;
-      const submittedBy = formData.submittedBy || {};
+    let html;
 
-      // Check if this is a user confirmation email
-      if (subject === 'Form Submission Confirmation') {
-        html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #1a56db; padding: 20px; border-radius: 8px 8px 0 0;">
-              <h1 style="color: white; margin: 0; text-align: center;">Form Submission Confirmation</h1>
+    if (isFormConfirmation) {
+      // Use a format similar to the department head notification
+      html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(90deg, #1a56db 0%, #2563eb 100%); padding: 24px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="color: #fff; margin: 0; font-size: 1.5rem;">Form Submission Confirmation</h1>
+            <p style="color: #e0e7ff; margin-top: 8px; font-size: 1.1rem;">Your form has been submitted successfully</p>
+          </div>
+          
+          <div style="background-color: #fff; padding: 24px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+            <p style="font-size: 16px; line-height: 1.6; color: #374151;">
+              Dear ${data.submittedBy?.fullName || 'User'},
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; color: #374151;">
+              Your ${data.formType?.replace('_', ' ').toUpperCase() || 'form'} has been submitted successfully! The form has been sent to your department head for review.
+            </p>
+            
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+              <h2 style="color: #1f2937; font-size: 1.2rem; margin-top: 0;">Form Details</h2>
+              <p style="margin-bottom: 8px;"><strong>Form Type:</strong> ${data.formType?.replace('_', ' ').toUpperCase() || 'N/A'}</p>
+              <p style="margin-bottom: 8px;"><strong>Submitted By:</strong> ${data.submittedBy?.fullName || 'N/A'}</p>
+              <p style="margin-bottom: 8px;"><strong>Department:</strong> ${data.submittedBy?.department?.toUpperCase() || 'N/A'}</p>
+              <p style="margin-bottom: 8px;"><strong>Email:</strong> ${data.submittedBy?.email || 'N/A'}</p>
+              <p style="margin-bottom: 8px;"><strong>Submission Date:</strong> ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              ${data.formId ? `<p style="margin-bottom: 0;"><strong>Form ID:</strong> ${data.formId}</p>` : ''}
             </div>
             
-            <div style="background-color: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 8px 8px;">
-              <p style="font-size: 16px; line-height: 1.6; color: #374151;">
-                Dear ${submittedBy.fullName},
-              </p>
-              
-              <p style="font-size: 16px; line-height: 1.6; color: #374151;">
-                Your ${formData.formType.replace('_', ' ').toUpperCase()} form was submitted successfully! We will notify you once it is reviewed.
-              </p>
-
-              <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h2 style="color: #374151; margin-top: 0;">Form Details</h2>
+            ${data.basicInfo ? `
+              <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;">
+                <h2 style="color: #1f2937; font-size: 1.2rem; margin-top: 0;">Payment Details</h2>
                 <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Form Type:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #e5e7eb;">${formData.formType.replace('_', ' ').toUpperCase()}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Department:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #e5e7eb;">${submittedBy.department || info.department || 'N/A'}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Date Submitted:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #e5e7eb;">${new Date().toLocaleDateString()}</td>
-                  </tr>
+                  ${data.basicInfo.requestorName ? `
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Requestor Name:</strong></td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${data.basicInfo.requestorName}</td>
+                    </tr>
+                  ` : ''}
+                  ${data.basicInfo.position ? `
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Position:</strong></td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${data.basicInfo.position}</td>
+                    </tr>
+                  ` : ''}
+                  ${data.basicInfo.department ? `
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Department:</strong></td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${data.basicInfo.department}</td>
+                    </tr>
+                  ` : ''}
+                  ${data.basicInfo.dateRequested ? `
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Date Requested:</strong></td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${data.basicInfo.dateRequested}</td>
+                    </tr>
+                  ` : ''}
+                  ${(data.basicInfo.amountRs !== undefined || data.basicInfo.amountCts !== undefined) ? `
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Amount:</strong></td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;">Rs. ${data.basicInfo.amountRs || '0'}.${data.basicInfo.amountCts || '00'}</td>
+                    </tr>
+                  ` : ''}
+                  ${data.basicInfo.expectedSpendingDate ? `
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Expected Spending Date:</strong></td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${data.basicInfo.expectedSpendingDate}</td>
+                    </tr>
+                  ` : ''}
+                  ${data.basicInfo.reasonForRequest ? `
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Reason for Request:</strong></td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${data.basicInfo.reasonForRequest}</td>
+                    </tr>
+                  ` : ''}
                 </table>
               </div>
-
-              <p style="font-size: 16px; line-height: 1.6; color: #374151;">
-                Thank you for using PayFlow.
-              </p>
-
-              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                <p style="color: #6b7280; font-size: 12px;">
-                  This is an automated message from PayFlow. Please do not reply to this email.
-                </p>
-              </div>
-            </div>
-          </div>
-        `;
-      } else {
-        // Admin notification email format (existing code)
-        html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #1a56db;">New Form Submission</h1>
-            <p style="font-size: 16px; line-height: 1.5;">${text}</p>
+            ` : ''}
             
-            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h2 style="color: #374151; margin-top: 0;">Submitter Information</h2>
-              <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                <tr>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Name:</strong></td>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${submittedBy.fullName || 'N/A'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Email:</strong></td>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${submittedBy.email || 'N/A'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Department:</strong></td>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${submittedBy.department || info.department || 'N/A'}</td>
-                </tr>
-              </table>
-
-              <h2 style="color: #374151; margin-top: 20px;">Form Details</h2>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Form Type:</strong></td>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${formData.formType ? formData.formType.replace('_', ' ').toUpperCase() : 'N/A'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Requestor Name:</strong></td>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${info.requestorName || submittedBy.fullName || 'N/A'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Position:</strong></td>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${info.position || 'N/A'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Department:</strong></td>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${info.department || submittedBy.department || 'N/A'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Date Requested:</strong></td>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${info.dateRequested || 'N/A'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Amount:</strong></td>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;">Rs. ${info.amountRs || '0'}.${info.amountCts || '00'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Expected Spending Date:</strong></td>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${info.expectedSpendingDate || 'N/A'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Reason for Request:</strong></td>
-                  <td style="padding: 8px; border: 1px solid #e5e7eb;">${info.reasonForRequest || 'N/A'}</td>
-                </tr>
-              </table>
+            <div style="background-color: #ecfdf5; padding: 16px; border-radius: 8px; margin: 24px 0; border-left: 4px solid #059669;">
+              <p style="color: #065f46; margin: 0; font-weight: 500;">Your form has been sent to your department head for review. You will be notified when there are updates.</p>
             </div>
-
-            <div style="background-color: #e5e7eb; padding: 15px; border-radius: 6px; margin-top: 20px;">
-              <p style="margin: 0; color: #374151;">
-                <strong>Action Required:</strong> Please log in to the PayFlow system to review and process this submission.
-              </p>
+            
+            <div style="text-align: center; margin-top: 32px;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/my-requests" 
+                style="display: inline-block; background: linear-gradient(90deg, #1a56db 0%, #2563eb 100%); color: white; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; text-align: center;">
+                View My Requests
+              </a>
             </div>
-
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-              <p style="color: #6b7280; font-size: 12px;">
-                This is an automated message from PayFlow. Please do not reply to this email.
-              </p>
-            </div>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
+              If the button above doesn't work, please log in to the PayFlow system and navigate to "My Requests".
+            </p>
           </div>
-        `;
-      }
+          
+          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <p style="color: #9ca3af; font-size: 12px;">
+              This is an automated message from PayFlow. Please do not reply to this email.<br>
+              &copy; ${new Date().getFullYear()} PayFlow. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `;
+    } else {
+      // Use a consistent style for other emails too
+      html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(90deg, #1a56db 0%, #2563eb 100%); padding: 24px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="color: #fff; margin: 0; font-size: 1.5rem;">${subject}</h1>
+          </div>
+          
+          <div style="background-color: #fff; padding: 24px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+            <p style="font-size: 16px; line-height: 1.6; color: #374151;">${text}</p>
+            
+            ${data.formType ? `<p style="margin-bottom: 8px;"><strong>Form Type:</strong> ${data.formType.replace('_', ' ').toUpperCase()}</p>` : ''}
+            ${data.submittedBy ? `
+              <p style="margin-bottom: 8px;"><strong>Submitted By:</strong> ${data.submittedBy.fullName}</p>
+              <p style="margin-bottom: 8px;"><strong>Email:</strong> ${data.submittedBy.email}</p>
+              <p style="margin-bottom: 8px;"><strong>Department:</strong> ${data.submittedBy.department.toUpperCase()}</p>
+            ` : ''}
+          </div>
+          
+          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <p style="color: #9ca3af; font-size: 12px;">
+              This is an automated message from PayFlow. Please do not reply to this email.<br>
+              &copy; ${new Date().getFullYear()} PayFlow. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `;
     }
 
     const mailOptions = {
       from: `"PayFlow" <${process.env.EMAIL_USER}>`,
       to,
       subject,
-      ...(html ? { html } : { text })
+      text,
+      html
     };
 
-    console.log('Attempting to send email...');
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully!');
-    console.log('Message ID:', info.messageId);
-    console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+    await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
-    console.error('=== Email Sending Error ===');
-    console.error('Error details:', error);
-    console.error('Error code:', error.code);
-    console.error('Error command:', error.command);
-    throw error;
+    return false;
   }
 };
 
@@ -500,12 +621,10 @@ export const sendNewsletterConfirmation = async (email, name) => {
       `
     };
 
-    console.log('Sending newsletter confirmation email to:', email);
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Newsletter confirmation email sent successfully:', info.messageId);
+    await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
-    console.error('Error sending newsletter confirmation:', error);
-    throw error;
+    return false;
   }
 };
+

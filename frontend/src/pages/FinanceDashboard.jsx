@@ -112,13 +112,22 @@ const FinanceDashboard = () => {
           // Get department from email
           const departmentFromEmail = getDepartmentFromEmail(form.submittedBy?.email);
 
+          // Determine the correct status
+          let status = 'other';
+          if (form.status === 'pending_finance_approval') {
+            status = 'pending';
+          } else if (form.status === 'approved' && form.approvalDetails?.financeApproval) {
+            status = 'approved';
+          } else if (form.status === 'rejected' && form.rejectionDetails?.stage === 'finance') {
+            status = 'rejected';
+          }
+
           return {
             id: form._id,
             formType: displayFormType,
             userEmail: form.submittedBy?.email || 'unknown@example.com',
             submittedAt: form.createdAt || new Date().toISOString(),
-            status: form.status === 'pending_finance_approval' ? 'pending' :
-              form.status === 'approved' ? 'approved' : 'rejected',
+            status: status,
             currentApprover: 'finance_officer',
             amount: amount,
             department: departmentFromEmail || form.submittedBy?.department || 'Unknown',
@@ -135,11 +144,14 @@ const FinanceDashboard = () => {
 
         setRequests(transformedData);
 
+        // Filter out forms with status 'other'
+        const validForms = transformedData.filter(req => req.status !== 'other');
+
         // Calculate stats
-        const pendingCount = transformedData.filter(req => req.status === 'pending').length;
-        const approvedCount = transformedData.filter(req => req.status === 'approved').length;
-        const rejectedCount = transformedData.filter(req => req.status === 'rejected').length;
-        const total = transformedData.reduce((sum, req) => sum + req.amount, 0);
+        const pendingCount = validForms.filter(req => req.status === 'pending').length;
+        const approvedCount = validForms.filter(req => req.status === 'approved').length;
+        const rejectedCount = validForms.filter(req => req.status === 'rejected').length;
+        const total = validForms.reduce((sum, req) => sum + req.amount, 0);
 
         setStats({
           pendingRequests: pendingCount,
@@ -169,7 +181,8 @@ const FinanceDashboard = () => {
 
   // Apply filters
   useEffect(() => {
-    let result = [...requests];
+    // First, filter out any forms with status 'other'
+    let result = requests.filter(req => req.status !== 'other');
 
     // Status filter
     if (statusFilter !== 'all') {
@@ -447,51 +460,6 @@ const FinanceDashboard = () => {
           </div>
         </div>
 
-        {/* Workflow Information Banner */}
-        <div className="mb-8 bg-blue-50 border border-blue-100 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center mb-3">
-            <div className="bg-blue-100 p-2 rounded-full mr-3">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-            <h2 className="text-lg font-semibold text-blue-800">Finance Approval Workflow</h2>
-          </div>
-          <p className="text-sm text-gray-700 mb-4">
-            This dashboard shows payment requests that have been <span className="font-medium">approved by department heads</span> and are now awaiting your review.
-            As a finance officer, you are responsible for the final approval or rejection of these payment requests.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="bg-white p-4 rounded-lg border border-blue-100">
-              <div className="flex items-center mb-2">
-                <div className="bg-yellow-100 p-1.5 rounded-full mr-2">
-                  <span className="text-yellow-700 font-bold">1</span>
-                </div>
-                <h3 className="font-medium text-gray-800">Department Head Approval</h3>
-              </div>
-              <p className="text-gray-600">Requests are first reviewed and approved by department heads before reaching this dashboard.</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border border-blue-100">
-              <div className="flex items-center mb-2">
-                <div className="bg-blue-100 p-1.5 rounded-full mr-2">
-                  <span className="text-blue-700 font-bold">2</span>
-                </div>
-                <h3 className="font-medium text-gray-800">Finance Review</h3>
-              </div>
-              <p className="text-gray-600">You are here. Review the request details and approve or reject based on financial policies.</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border border-blue-100">
-              <div className="flex items-center mb-2">
-                <div className="bg-green-100 p-1.5 rounded-full mr-2">
-                  <span className="text-green-700 font-bold">3</span>
-                </div>
-                <h3 className="font-medium text-gray-800">Payment Processing</h3>
-              </div>
-              <p className="text-gray-600">After your approval, the payment will be processed according to the financial procedures.</p>
-            </div>
-          </div>
-        </div>
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-blue-50 border border-blue-100 rounded-lg p-5">
@@ -758,6 +726,51 @@ const FinanceDashboard = () => {
             </nav>
           </div>
         )}
+      </div>
+
+      {/* Finance Approval Workflow - As a separate section */}
+      <div className="border border-blue-100 bg-blue-50 rounded-xl shadow-lg p-6">
+        <div className="flex items-center mb-3">
+          <div className="bg-blue-100 p-2 rounded-full mr-3">
+            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-blue-800">Finance Approval Workflow</h2>
+        </div>
+        <p className="text-sm text-gray-700 mb-4">
+          This dashboard shows payment requests that have been <span className="font-medium">approved by department heads</span> and are now awaiting your review.
+          As a finance officer, you are responsible for the final approval or rejection of these payment requests.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div className="bg-white p-4 rounded-lg border border-blue-100">
+            <div className="flex items-center mb-2">
+              <div className="bg-yellow-100 p-1.5 rounded-full mr-2">
+                <span className="text-yellow-700 font-bold">1</span>
+              </div>
+              <h3 className="font-medium text-gray-800">Department Head Approval</h3>
+            </div>
+            <p className="text-gray-600">Requests are first reviewed and approved by department heads before reaching this dashboard.</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-blue-100">
+            <div className="flex items-center mb-2">
+              <div className="bg-blue-100 p-1.5 rounded-full mr-2">
+                <span className="text-blue-700 font-bold">2</span>
+              </div>
+              <h3 className="font-medium text-gray-800">Finance Review</h3>
+            </div>
+            <p className="text-gray-600">You are here. Review the request details and approve or reject based on financial policies.</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-blue-100">
+            <div className="flex items-center mb-2">
+              <div className="bg-green-100 p-1.5 rounded-full mr-2">
+                <span className="text-green-700 font-bold">3</span>
+              </div>
+              <h3 className="font-medium text-gray-800">Payment Processing</h3>
+            </div>
+            <p className="text-gray-600">After your approval, the payment will be processed according to the financial procedures.</p>
+          </div>
+        </div>
       </div>
     </div>
   );

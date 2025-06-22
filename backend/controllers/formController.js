@@ -560,10 +560,16 @@ export const getHodForms = async (req, res) => {
 // Get forms for finance officer
 export const getFinanceForms = async (req, res) => {
   try {
-    // Find all forms with status 'pending_finance_approval'
-    // This shows all forms that have been approved by HOD and are waiting for finance approval
+    // Fetch ALL forms relevant to finance:
+    // 1. Forms pending finance approval
+    // 2. Forms approved by finance
+    // 3. Forms rejected by finance
     const forms = await mongoose.connection.collection('forms').find({
-      'status': 'pending_finance_approval'
+      $or: [
+        { 'status': 'pending_finance_approval' },
+        { 'status': 'approved', 'approvalDetails.financeApproval': { $exists: true } },
+        { 'status': 'rejected', 'rejectionDetails.stage': 'finance' }
+      ]
     }).sort({ createdAt: -1 }).toArray();
 
     res.status(200).json({

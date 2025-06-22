@@ -168,7 +168,7 @@ const HeadDashboard = () => {
             userEmail: form.submittedBy?.email || 'unknown@example.com',
             submittedAt: form.createdAt || new Date().toISOString(),
             status: form.status === 'pending_hod_approval' ? 'pending' :
-              form.status === 'pending_finance_approval' ? 'pending_finance' : form.status,
+              form.status === 'pending_finance_approval' ? 'approved' : form.status,
             currentApprover: form.status === 'pending_hod_approval' ? 'department_head' : 'finance_officer',
             amount: amount,
             formData: {
@@ -199,7 +199,7 @@ const HeadDashboard = () => {
         // Calculate stats
         const pendingCount = departmentForms.filter(req => req.status === 'pending').length;
         const approvedCount = departmentForms.filter(req =>
-          req.status === 'approved' || req.status === 'pending_finance'
+          req.status === 'approved'
         ).length;
         const rejectedCount = departmentForms.filter(req => req.status === 'rejected').length;
 
@@ -540,7 +540,7 @@ const HeadDashboard = () => {
                 </svg>
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">Forwarded to finance</p>
+            <p className="text-xs text-gray-500 mt-2">Approved & forwarded to finance</p>
           </div>
 
           <div className="bg-red-50 border border-red-100 rounded-lg p-5">
@@ -728,7 +728,8 @@ const HeadDashboard = () => {
                           ${request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                             request.status === 'approved' ? 'bg-green-100 text-green-800' :
                               'bg-red-100 text-red-800'}`}>
-                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                          {request.status === 'approved' ? 'Approved (To Finance)' :
+                            request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -833,7 +834,8 @@ const HeadDashboard = () => {
                       request.status === 'approved' ? 'bg-green-100 text-green-800' :
                         'bg-red-100 text-red-800'
                       }`}>
-                      {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                      {request.status === 'approved' ? 'Approved (To Finance)' :
+                        request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                     </span>
                   </div>
                 </div>

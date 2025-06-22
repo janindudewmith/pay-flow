@@ -393,7 +393,7 @@ const ViewRequests = () => {
         </div>
 
         {/* Approval/Rejection section */}
-        {formData.status.includes('pending') && (
+        {formData.status === 'pending_hod_approval' && !isFinanceOfficer && (
           <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8">
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4">
               <h2 className="text-xl font-bold text-white flex items-center">
@@ -454,6 +454,139 @@ const ViewRequests = () => {
             </div>
           </div>
         )}
+
+        {formData.status === 'pending_finance_approval' && isFinanceOfficer && (
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8">
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4">
+              <h2 className="text-xl font-bold text-white flex items-center">
+                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Finance Review Decision
+              </h2>
+            </div>
+
+            <div className="p-6">
+              <div className="bg-purple-50 rounded-lg p-4 mb-6 border border-purple-100">
+                <p className="text-sm text-gray-700">
+                  Please review the request carefully before making a decision.
+                  As a Finance Officer, your approval will process the payment.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={handleApprove}
+                  disabled={isSubmitting}
+                  className={`px-6 py-3 rounded-lg text-white font-medium flex items-center justify-center transition-all duration-300
+                    ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg'}`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      Approve & Process Payment
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setShowRejectionModal(true)}
+                  disabled={isSubmitting}
+                  className={`px-6 py-3 rounded-lg text-white font-medium flex items-center justify-center transition-all duration-300
+                    ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-md hover:shadow-lg'}`}
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                  Reject Request
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Status information for already processed forms */}
+        {((formData.status === 'pending_finance_approval' && !isFinanceOfficer) ||
+          (formData.status === 'approved') ||
+          (formData.status === 'rejected')) && (
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8">
+              <div className={`px-6 py-4 ${formData.status === 'approved' ? 'bg-gradient-to-r from-green-500 to-green-700' :
+                  formData.status === 'rejected' ? 'bg-gradient-to-r from-red-500 to-red-700' :
+                    'bg-gradient-to-r from-blue-500 to-blue-700'
+                }`}>
+                <h2 className="text-xl font-bold text-white flex items-center">
+                  {formData.status === 'approved' ? (
+                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  ) : formData.status === 'rejected' ? (
+                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  ) : (
+                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  )}
+                  Request Status
+                </h2>
+              </div>
+
+              <div className="p-6">
+                {formData.status === 'approved' && (
+                  <div className="bg-green-50 rounded-lg p-4 border border-green-100 flex items-start">
+                    <svg className="w-6 h-6 text-green-600 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                      <h3 className="font-semibold text-green-800">Request Approved</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        This request has been fully approved and payment is being processed.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {formData.status === 'rejected' && (
+                  <div className="bg-red-50 rounded-lg p-4 border border-red-100 flex items-start">
+                    <svg className="w-6 h-6 text-red-600 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                      <h3 className="font-semibold text-red-800">Request Rejected</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        This request has been rejected. Reason: {formData.rejectionDetails?.reason || "No reason provided"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {formData.status === 'pending_finance_approval' && !isFinanceOfficer && (
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-100 flex items-start">
+                    <svg className="w-6 h-6 text-blue-600 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                      <h3 className="font-semibold text-blue-800">Approved & Forwarded to Finance</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        You have approved this request and it has been forwarded to the Finance Department for final approval and payment processing.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
       </>
     );
   };

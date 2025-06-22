@@ -345,7 +345,7 @@ const FinanceDashboard = () => {
         <div className="mb-8 bg-gradient-to-r from-green-50 to-teal-50 border border-green-100 rounded-xl p-6 shadow-sm">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0">
-              <h2 className="text-lg font-semibold text-teal-800">Finance Request Dashboard Refresh</h2>
+              <h2 className="text-lg font-semibold text-teal-800">Refresh Finance Dashboard </h2>
               <p className="text-sm text-gray-600 mt-1">
                 Click the button to fetch the latest payment requests awaiting finance approval.
                 This ensures you're viewing the most up-to-date information for processing payments.

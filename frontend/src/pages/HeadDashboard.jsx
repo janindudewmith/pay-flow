@@ -432,10 +432,10 @@ const HeadDashboard = () => {
         <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-6 shadow-sm">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0">
-              <h2 className="text-lg font-semibold text-indigo-800">Request Dashboard Refresh</h2>
+              <h2 className="text-lg font-semibold text-indigo-800">Refresh Department Dashboard </h2>
               <p className="text-sm text-gray-600 mt-1">
                 Click the button to fetch the latest payment requests submitted by department members.
-                This ensures you're viewing the most up-to-date information for approval decisions.
+                This ensures you're viewing the most up-to-date information for approval.
               </p>
               <p className="text-xs text-gray-500 mt-2">
                 Last refreshed: {formatDateTime(lastRefreshed)}

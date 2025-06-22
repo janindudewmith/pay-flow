@@ -15,7 +15,7 @@ const FinanceDashboard = () => {
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
 
   // Filter states
-  const [statusFilter, setStatusFilter] = useState('pending');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
@@ -56,8 +56,8 @@ const FinanceDashboard = () => {
 
       console.log('FinanceDashboard: Fetching forms from API...');
 
-      // Fetch all forms from the backend
-      const response = await api.get('/api/forms/all-forms');
+      // Fetch only forms that are pending finance approval (approved by HOD)
+      const response = await api.get('/api/forms/finance-forms');
 
       console.log('FinanceDashboard: API response received:', response.data);
 
@@ -109,6 +109,9 @@ const FinanceDashboard = () => {
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
 
+          // Get department from email
+          const departmentFromEmail = getDepartmentFromEmail(form.submittedBy?.email);
+
           return {
             id: form._id,
             formType: displayFormType,
@@ -118,7 +121,7 @@ const FinanceDashboard = () => {
               form.status === 'approved' ? 'approved' : 'rejected',
             currentApprover: 'finance_officer',
             amount: amount,
-            department: form.submittedBy?.department || 'Unknown',
+            department: departmentFromEmail || form.submittedBy?.department || 'Unknown',
             formData: {
               requestorName: form.submittedBy?.fullName || 'Unknown User',
               officerName: form.submittedBy?.fullName || 'Unknown User',
@@ -234,16 +237,36 @@ const FinanceDashboard = () => {
 
   // Extract department from email
   const getDepartmentFromEmail = (email) => {
-    const domain = email.split('@')[1];
-    const deptCode = domain.split('.')[0];
+    if (!email) return 'Unknown';
 
-    const departments = {
-      'eie': 'Electrical & Information Engineering',
-      'cee': 'Civil & Environmental Engineering',
-      'mme': 'Mechanical & Manufacturing Engineering'
-    };
+    // Extract the username part (before @)
+    const username = email.split('@')[0];
 
-    return departments[deptCode] || deptCode.toUpperCase();
+    // Check if the email follows the pattern user.department@domain.com
+    if (username.includes('.')) {
+      const deptCode = username.split('.')[1].toLowerCase();
+
+      // Map department codes to full names
+      if (deptCode === 'eie') {
+        return 'Electrical & Information Engineering';
+      } else if (deptCode === 'cee') {
+        return 'Civil & Environmental Engineering';
+      } else if (deptCode === 'mme') {
+        return 'Mechanical & Manufacturing Engineering';
+      }
+    }
+
+    // Check for department codes in the username
+    if (username.includes('eie')) {
+      return 'Electrical & Information Engineering';
+    } else if (username.includes('cee')) {
+      return 'Civil & Environmental Engineering';
+    } else if (username.includes('mme')) {
+      return 'Mechanical & Manufacturing Engineering';
+    }
+
+    // If no department code found, return the domain part or Unknown
+    return 'Unknown Department';
   };
 
   // Handle approve/reject actions
@@ -424,6 +447,51 @@ const FinanceDashboard = () => {
           </div>
         </div>
 
+        {/* Workflow Information Banner */}
+        <div className="mb-8 bg-blue-50 border border-blue-100 rounded-xl p-6 shadow-sm">
+          <div className="flex items-center mb-3">
+            <div className="bg-blue-100 p-2 rounded-full mr-3">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-blue-800">Finance Approval Workflow</h2>
+          </div>
+          <p className="text-sm text-gray-700 mb-4">
+            This dashboard shows payment requests that have been <span className="font-medium">approved by department heads</span> and are now awaiting your review.
+            As a finance officer, you are responsible for the final approval or rejection of these payment requests.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="bg-white p-4 rounded-lg border border-blue-100">
+              <div className="flex items-center mb-2">
+                <div className="bg-yellow-100 p-1.5 rounded-full mr-2">
+                  <span className="text-yellow-700 font-bold">1</span>
+                </div>
+                <h3 className="font-medium text-gray-800">Department Head Approval</h3>
+              </div>
+              <p className="text-gray-600">Requests are first reviewed and approved by department heads before reaching this dashboard.</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-blue-100">
+              <div className="flex items-center mb-2">
+                <div className="bg-blue-100 p-1.5 rounded-full mr-2">
+                  <span className="text-blue-700 font-bold">2</span>
+                </div>
+                <h3 className="font-medium text-gray-800">Finance Review</h3>
+              </div>
+              <p className="text-gray-600">You are here. Review the request details and approve or reject based on financial policies.</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-blue-100">
+              <div className="flex items-center mb-2">
+                <div className="bg-green-100 p-1.5 rounded-full mr-2">
+                  <span className="text-green-700 font-bold">3</span>
+                </div>
+                <h3 className="font-medium text-gray-800">Payment Processing</h3>
+              </div>
+              <p className="text-gray-600">After your approval, the payment will be processed according to the financial procedures.</p>
+            </div>
+          </div>
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-blue-50 border border-blue-100 rounded-lg p-5">
@@ -498,9 +566,9 @@ const FinanceDashboard = () => {
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
+                <option value="pending">Pending Finance Approval</option>
+                <option value="approved">Approved by Finance</option>
+                <option value="rejected">Rejected by Finance</option>
               </select>
             </div>
 
@@ -512,10 +580,9 @@ const FinanceDashboard = () => {
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Departments</option>
-                <option value="Electrical">Electrical & Information</option>
-                <option value="Civil">Civil & Environmental</option>
-                <option value="Mechanical">Mechanical & Manufacturing</option>
-                <option value="Marine">Marine Engineering</option>
+                <option value="Electrical & Information Engineering">Electrical & Information Engineering</option>
+                <option value="Civil & Environmental Engineering">Civil & Environmental Engineering</option>
+                <option value="Mechanical & Manufacturing Engineering">Mechanical & Manufacturing Engineering</option>
               </select>
             </div>
 

@@ -36,7 +36,40 @@ const getHodEmail = (department) => {
 
 // Helper function to get finance officer email
 const getFinanceOfficerEmail = () => {
-  return process.env.FINANCE_OFFICER;
+  return process.env.FINANCE_OFFICER || 'finance.officer@ruh.ac.lk';
+};
+
+// Helper function to extract department from email
+const getDepartmentFromEmail = (email) => {
+  if (!email) return null;
+
+  // Extract the username part (before @)
+  const username = email.split('@')[0];
+
+  // Check if the email follows the pattern user.department@domain.com
+  if (username.includes('.')) {
+    const deptCode = username.split('.')[1].toLowerCase();
+
+    // Map department codes to full names
+    if (deptCode === 'eie') {
+      return 'Electrical & Information Engineering';
+    } else if (deptCode === 'cee') {
+      return 'Civil & Environmental Engineering';
+    } else if (deptCode === 'mme') {
+      return 'Mechanical & Manufacturing Engineering';
+    }
+  }
+
+  // Check for department codes in the username
+  if (username.includes('eie')) {
+    return 'Electrical & Information Engineering';
+  } else if (username.includes('cee')) {
+    return 'Civil & Environmental Engineering';
+  } else if (username.includes('mme')) {
+    return 'Mechanical & Manufacturing Engineering';
+  }
+
+  return null;
 };
 
 // Send OTP
@@ -643,6 +676,11 @@ export const sendFinanceOfficerNotification = async (form) => {
       return false;
     }
 
+    // Extract department from submitter's email
+    const submitterEmail = form.submittedBy.email;
+    const departmentFromEmail = getDepartmentFromEmail(submitterEmail);
+    const department = departmentFromEmail || form.submittedBy.department.toUpperCase();
+
     const subject = 'New Form Requires Your Approval';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -656,7 +694,7 @@ export const sendFinanceOfficerNotification = async (form) => {
             <h2 style="color: #1f2937; font-size: 1.2rem; margin-top: 0;">Form Details</h2>
             <p style="margin-bottom: 8px;"><strong>Form Type:</strong> ${form.formType.replace('_', ' ').toUpperCase()}</p>
             <p style="margin-bottom: 8px;"><strong>Submitted By:</strong> ${form.submittedBy.fullName}</p>
-            <p style="margin-bottom: 8px;"><strong>Department:</strong> ${form.submittedBy.department.toUpperCase()}</p>
+            <p style="margin-bottom: 8px;"><strong>Department:</strong> ${department}</p>
             <p style="margin-bottom: 8px;"><strong>Email:</strong> ${form.submittedBy.email}</p>
             <p style="margin-bottom: 8px;"><strong>Submission Date:</strong> ${new Date(form.createdAt).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             <p style="margin-bottom: 8px;"><strong>Approved By HOD:</strong> ${form.approvalDetails?.hodApproval?.approvedBy || 'Department Head'}</p>

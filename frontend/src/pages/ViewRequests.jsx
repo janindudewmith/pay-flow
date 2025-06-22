@@ -26,7 +26,10 @@ const ViewRequests = () => {
         const response = await api.get(`/api/forms/${requestId}`);
 
         if (response.data && response.data.success) {
-          console.log('Form data:', response.data.data);
+          console.log('Full form data:', JSON.stringify(response.data.data, null, 2));
+          if (response.data.data.status === 'rejected') {
+            console.log('Rejection details from API:', JSON.stringify(response.data.data.rejectionDetails, null, 2));
+          }
           setFormData(response.data.data);
         } else {
           throw new Error('Failed to fetch form data');
@@ -125,17 +128,37 @@ const ViewRequests = () => {
 
       console.log('Rejecting request with role:', role);
       console.log('Request ID:', requestId);
+      console.log('Rejection reason:', rejectionReason);
 
-      const response = await api.post(`/api/forms/${requestId}/action`, {
-        formId: requestId, // Explicitly include formId in the request body
+      const payload = {
+        formId: requestId,
         action: 'reject',
         comments: rejectionReason,
         userRole: role
-      });
+      };
 
-      console.log('Rejection response:', response.data);
+      console.log('Sending rejection payload:', payload);
+
+      const response = await api.post(`/api/forms/${requestId}/action`, payload);
+
+      console.log('Rejection response:', JSON.stringify(response.data, null, 2));
 
       if (response.data && response.data.success) {
+        // Update the form data directly with rejection details
+        setFormData(prevData => {
+          console.log('Updating form data with rejection details');
+          return {
+            ...prevData,
+            status: 'rejected',
+            rejectionDetails: {
+              rejectedBy: role === 'finance_officer' ? 'Finance Officer' : 'Department Head',
+              rejectedAt: new Date(),
+              reason: rejectionReason,
+              comments: rejectionReason  // Add the comments field explicitly
+            }
+          };
+        });
+
         // Show toast with longer duration
         toast.success('Request rejected successfully!', {
           position: "top-center",
@@ -148,7 +171,8 @@ const ViewRequests = () => {
         });
         setShowRejectionModal(false);
 
-        // Add a longer delay before redirecting to allow time for the toast to complete
+        // Since we're updating the form data directly, we don't need to redirect immediately
+        // Instead, let the user see the updated rejection status
         setTimeout(() => {
           // Force a full page reload of the dashboard to ensure fresh data
           const dashboardUrl = isFinanceOfficer ? '/finance/dashboard' : '/department/dashboard';
@@ -521,8 +545,8 @@ const ViewRequests = () => {
           (formData.status === 'rejected')) && (
             <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8">
               <div className={`px-6 py-4 ${formData.status === 'approved' ? 'bg-gradient-to-r from-green-500 to-green-700' :
-                  formData.status === 'rejected' ? 'bg-gradient-to-r from-red-500 to-red-700' :
-                    'bg-gradient-to-r from-blue-500 to-blue-700'
+                formData.status === 'rejected' ? 'bg-gradient-to-r from-red-500 to-red-700' :
+                  'bg-gradient-to-r from-blue-500 to-blue-700'
                 }`}>
                 <h2 className="text-xl font-bold text-white flex items-center">
                   {formData.status === 'approved' ? (
@@ -564,9 +588,13 @@ const ViewRequests = () => {
                     </svg>
                     <div>
                       <h3 className="font-semibold text-red-800">Request Rejected</h3>
-                      <p className="text-sm text-gray-600 mt-1">
-                        This request has been rejected. Reason: {formData.rejectionDetails?.reason || "No reason provided"}
-                      </p>
+                      <RejectionReasonDisplay formData={formData} />
+
+                      {formData.rejectionDetails?.rejectedBy && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Rejected by: {formData.rejectionDetails.rejectedBy} on {formatDate(formData.rejectionDetails.rejectedAt)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -976,5 +1004,50 @@ const ViewRequests = () => {
     </div>
   );
 };
+
+function RejectionReasonDisplay({ formData }) {
+  console.log('RejectionReasonDisplay - Full form data:', formData);
+
+  // Try to extract rejection reason from all possible locations
+  let rejectionReason = null;
+
+  if (formData.rejectionDetails) {
+    console.log('RejectionDetails found:', formData.rejectionDetails);
+    rejectionReason = formData.rejectionDetails.reason || formData.rejectionDetails.comments;
+  }
+
+  if (!rejectionReason && formData.comments) {
+    console.log('Comments found:', formData.comments);
+    rejectionReason = formData.comments;
+  }
+
+  // Try to access nested properties
+  if (!rejectionReason && formData.rejectionDetails) {
+    for (const key in formData.rejectionDetails) {
+      console.log(`Checking key ${key}:`, formData.rejectionDetails[key]);
+      if (typeof formData.rejectionDetails[key] === 'string' &&
+        formData.rejectionDetails[key].length > 0 &&
+        key !== 'rejectedBy' &&
+        key !== 'stage' &&
+        !key.includes('At')) {
+        rejectionReason = formData.rejectionDetails[key];
+        console.log('Found potential reason in key:', key, rejectionReason);
+        break;
+      }
+    }
+  }
+
+  return (
+    <div className="text-sm text-gray-600 mt-1">
+      <p>This request has been rejected.</p>
+      <p className="mt-2 font-medium">
+        Reason: {rejectionReason || "No reason provided"}
+      </p>
+      <pre className="text-xs bg-gray-100 p-2 mt-2 rounded overflow-auto max-h-32 hidden">
+        {JSON.stringify(formData.rejectionDetails, null, 2)}
+      </pre>
+    </div>
+  );
+}
 
 export default ViewRequests;

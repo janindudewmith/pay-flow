@@ -34,6 +34,11 @@ const getHodEmail = (department) => {
   return hodEmail || null;
 };
 
+// Helper function to get finance officer email
+const getFinanceOfficerEmail = () => {
+  return process.env.FINANCE_OFFICER;
+};
+
 // Send OTP
 export const sendOTP = async (email, otp, purpose) => {
   try {
@@ -624,6 +629,77 @@ export const sendNewsletterConfirmation = async (email, name) => {
     await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
+    return false;
+  }
+};
+
+// Send notification to finance officer when HOD approves a form
+export const sendFinanceOfficerNotification = async (form) => {
+  try {
+    const financeOfficerEmail = getFinanceOfficerEmail();
+
+    if (!financeOfficerEmail) {
+      console.error('Finance officer email not configured');
+      return false;
+    }
+
+    const subject = 'New Form Requires Your Approval';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(90deg, #1a56db 0%, #2563eb 100%); padding: 24px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: #fff; margin: 0; font-size: 1.5rem;">New Form For Finance Review</h1>
+          <p style="color: #e0e7ff; margin-top: 8px; font-size: 1.1rem;">Action Required: Your Approval is Needed</p>
+        </div>
+        
+        <div style="background-color: #fff; padding: 24px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+          <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #1f2937; font-size: 1.2rem; margin-top: 0;">Form Details</h2>
+            <p style="margin-bottom: 8px;"><strong>Form Type:</strong> ${form.formType.replace('_', ' ').toUpperCase()}</p>
+            <p style="margin-bottom: 8px;"><strong>Submitted By:</strong> ${form.submittedBy.fullName}</p>
+            <p style="margin-bottom: 8px;"><strong>Department:</strong> ${form.submittedBy.department.toUpperCase()}</p>
+            <p style="margin-bottom: 8px;"><strong>Email:</strong> ${form.submittedBy.email}</p>
+            <p style="margin-bottom: 8px;"><strong>Submission Date:</strong> ${new Date(form.createdAt).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p style="margin-bottom: 8px;"><strong>Approved By HOD:</strong> ${form.approvalDetails?.hodApproval?.approvedBy || 'Department Head'}</p>
+            <p style="margin-bottom: 8px;"><strong>Approval Date:</strong> ${new Date(form.approvalDetails?.hodApproval?.approvedAt || new Date()).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p style="margin-bottom: 0;"><strong>Form ID:</strong> ${form._id}</p>
+          </div>
+          
+          <div style="background-color: #ecfdf5; padding: 16px; border-radius: 8px; margin: 24px 0; border-left: 4px solid #059669;">
+            <p style="color: #065f46; margin: 0; font-weight: 500;">This form has been approved by the Department Head and requires your review as Finance Officer.</p>
+          </div>
+          
+          <div style="text-align: center; margin-top: 32px;">
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/finance/dashboard" 
+              style="display: inline-block; background: linear-gradient(90deg, #1a56db 0%, #2563eb 100%); color: white; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; text-align: center;">
+              Review & Process Form
+            </a>
+          </div>
+          
+          <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
+            If the button above doesn't work, please log in to the PayFlow system and navigate to your Finance Dashboard.
+          </p>
+        </div>
+        
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+          <p style="color: #9ca3af; font-size: 12px;">
+            This is an automated message from PayFlow. Please do not reply to this email.<br>
+            &copy; ${new Date().getFullYear()} PayFlow. All rights reserved.
+          </p>
+        </div>
+      </div>
+    `;
+
+    const mailOptions = {
+      from: `"PayFlow" <${process.env.EMAIL_USER}>`,
+      to: financeOfficerEmail,
+      subject,
+      html
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('Error sending finance officer notification:', error);
     return false;
   }
 };

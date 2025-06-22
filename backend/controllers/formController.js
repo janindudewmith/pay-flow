@@ -1,6 +1,6 @@
 import Form from '../models/Form.js';
 import Department from '../models/Department.js';
-import { sendFormNotification, sendRejectionNotification, sendOTP, sendSimpleEmail } from '../services/emailService.js';
+import { sendFormNotification, sendRejectionNotification, sendOTP, sendSimpleEmail, sendFinanceOfficerNotification } from '../services/emailService.js';
 import { websocketService } from '../services/websocketService.js';
 import OTP from '../models/OTP.js';
 import mongoose from 'mongoose';
@@ -342,12 +342,23 @@ export const handleFormAction = async (req, res) => {
 
           // Notify finance officer
           try {
+            await sendFinanceOfficerNotification(form);
+            console.log(`Finance officer notification sent for form: ${form._id}`);
+          } catch (notifyError) {
+            console.error('Error sending finance officer notification:', notifyError);
+            // Continue even if notification fails
+          }
+
+          // Also notify the form submitter about HOD approval
+          try {
             await sendFormNotification(
-              financeOfficerEmail,
+              form.submittedBy.email,
               'form_approved_by_hod',
               form
             );
+            console.log(`HOD approval notification sent to submitter: ${form.submittedBy.email}`);
           } catch (notifyError) {
+            console.error('Error sending HOD approval notification to submitter:', notifyError);
             // Continue even if notification fails
           }
         } else if (role === 'finance_officer') {

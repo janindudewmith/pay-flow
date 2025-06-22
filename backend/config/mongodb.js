@@ -9,7 +9,7 @@ const connectDB = async () => {
     const dbName = uri.includes('mongodb.net/') ? '' : '/pay-flow';
 
     const connectionString = `${uri}${dbName}`;
-    console.log(`Attempting to connect to MongoDB at: ${connectionString}`);
+    console.log(`Connecting to MongoDB at: ${connectionString}`);
 
     // Configure Mongoose connection
     await mongoose.connect(connectionString);

@@ -11,11 +11,8 @@ const connectDB = async () => {
     const connectionString = `${uri}${dbName}`;
     console.log(`Attempting to connect to MongoDB at: ${connectionString}`);
 
-    // Configure Mongoose connection options
-    await mongoose.connect(connectionString, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    // Configure Mongoose connection
+    await mongoose.connect(connectionString);
 
     console.log("Database connected successfully");
 

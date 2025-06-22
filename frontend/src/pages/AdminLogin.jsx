@@ -1,86 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { assets } from '../assets/assets';
+import useAdminAuth from '../hooks/useAdminAuth';
+import { toast } from 'react-toastify';
 
 const AdminLogin = () => {
-  // Define admin accounts with hardcoded credentials for all department heads
-  const adminAccounts = [
-    // Department Heads
-    {
-      email: import.meta.env.VITE_ADMIN_EIE_EMAIL,
-      password: import.meta.env.VITE_ADMIN_EIE_PASSWORD,
-      role: import.meta.env.VITE_ADMIN_EIE_ROLE,
-      department: import.meta.env.VITE_ADMIN_EIE_DEPARTMENT,
-      name: import.meta.env.VITE_ADMIN_EIE_NAME
-    },
-    {
-      email: import.meta.env.VITE_ADMIN_CEE_EMAIL,
-      password: import.meta.env.VITE_ADMIN_CEE_PASSWORD,
-      role: import.meta.env.VITE_ADMIN_CEE_ROLE,
-      department: import.meta.env.VITE_ADMIN_CEE_DEPARTMENT,
-      name: import.meta.env.VITE_ADMIN_CEE_NAME
-    },
-    {
-      email: import.meta.env.VITE_ADMIN_MME_EMAIL,
-      password: import.meta.env.VITE_ADMIN_MME_PASSWORD,
-      role: import.meta.env.VITE_ADMIN_MME_ROLE,
-      department: import.meta.env.VITE_ADMIN_MME_DEPARTMENT,
-      name: import.meta.env.VITE_ADMIN_MME_NAME
-    },
-    // Finance Officer
-    {
-      email: import.meta.env.VITE_ADMIN_FINANCE_EMAIL,
-      password: import.meta.env.VITE_ADMIN_FINANCE_PASSWORD,
-      role: import.meta.env.VITE_ADMIN_FINANCE_ROLE,
-      name: import.meta.env.VITE_ADMIN_FINANCE_NAME
-    }
-  ];
-
-  const [role, setRole] = useState('department_head');
+  const { login, isAdmin, adminRole, loading: authLoading } = useAdminAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [role, setRole] = useState('department_head');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
+  // Check if user is already signed in and has admin role
+  useEffect(() => {
+    if (isAdmin) {
+      // User is already signed in and has admin role, redirect to appropriate dashboard
+      if (adminRole === 'department_head') {
+        navigate('/department/dashboard');
+      } else if (adminRole === 'finance_officer') {
+        navigate('/finance/dashboard');
+      }
+    }
+  }, [isAdmin, adminRole, navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     try {
-      const matchedAdmin = adminAccounts.find(
-        (admin) => admin.email === email && admin.password === password && admin.role === role
-      );
+      const result = await login(email, password, role);
 
-      if (matchedAdmin) {
-        // Simulate login token
-        localStorage.setItem('adminToken', 'dummy-token');
-        localStorage.setItem('adminRole', matchedAdmin.role);
-
-        // Store additional information about the admin
-        if (matchedAdmin.department) {
-          localStorage.setItem('adminDepartment', matchedAdmin.department);
-        }
-        localStorage.setItem('adminName', matchedAdmin.name);
-        localStorage.setItem('adminEmail', matchedAdmin.email);
-
-        if (matchedAdmin.role === 'department_head') {
+      if (result.success) {
+        // Redirect based on role without showing toast
+        if (role === 'department_head') {
           navigate('/department/dashboard');
-        } else if (matchedAdmin.role === 'finance_officer') {
+        } else if (role === 'finance_officer') {
           navigate('/finance/dashboard');
         }
       } else {
-        setError('Invalid credentials or role mismatch');
+        // Show error toast
+        toast.error(result.message || 'Login failed. Please check your credentials.');
       }
-    } catch (error) {
-      setError('An error occurred. Please try again.');
-      console.error('Login error:', error);
+    } catch (err) {
+      console.error('Login error:', err);
+      toast.error(err.message || 'An error occurred during login');
     } finally {
       setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center pt-8 pb-4 px-4">
@@ -118,15 +95,6 @@ const AdminLogin = () => {
         {/* Right side - Login form */}
         <div className="w-full md:w-1/2 p-8">
           <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Admin Login</h2>
-
-          {error && (
-            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">

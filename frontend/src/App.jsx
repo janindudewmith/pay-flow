@@ -20,6 +20,8 @@ import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import ScrollToTop from './components/ScrollToTop';
+import AdminProtectedRoute from './components/AdminProtectedRoute';
+import UserOnlyRoute from './components/UserOnlyRoute';
 
 const App = () => {
   const { isSignedIn, user } = useUser();
@@ -51,13 +53,55 @@ const App = () => {
       <UserProfile />
       <Routes>
         <Route path='/' element={<Home />} />
-        <Route path='/request-payment/:id' element={<RequestPayment />} />
+        <Route
+          path='/request-payment/:id'
+          element={
+            <UserOnlyRoute>
+              <RequestPayment />
+            </UserOnlyRoute>
+          }
+        />
         <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path='/requests' element={<Requests />} />
-        <Route path="/department/dashboard" element={<HeadDashboard />} />
-        <Route path="/department/requests/:requestId" element={<ViewRequests />} />
-        <Route path="/finance/dashboard" element={<FinanceDashboard />} />
-        <Route path="/finance/requests/:requestId" element={<ViewRequests />} />
+        <Route
+          path='/requests'
+          element={
+            <UserOnlyRoute>
+              <Requests />
+            </UserOnlyRoute>
+          }
+        />
+        <Route
+          path="/department/dashboard"
+          element={
+            <AdminProtectedRoute requiredRole="department_head">
+              <HeadDashboard />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/department/requests/:requestId"
+          element={
+            <AdminProtectedRoute requiredRole="department_head">
+              <ViewRequests />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/finance/dashboard"
+          element={
+            <AdminProtectedRoute requiredRole="finance_officer">
+              <FinanceDashboard />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/finance/requests/:requestId"
+          element={
+            <AdminProtectedRoute requiredRole="finance_officer">
+              <ViewRequests />
+            </AdminProtectedRoute>
+          }
+        />
         <Route path="/payment-description/:paymentType" element={<PaymentDescriptionPage />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<ContactUs />} />
@@ -65,7 +109,18 @@ const App = () => {
       </Routes>
       <Footer />
       <ScrollToTop />
-      <ToastContainer />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </div>
   );
 };

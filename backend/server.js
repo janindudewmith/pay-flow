@@ -16,6 +16,7 @@ import { sendFormNotification } from './services/emailService.js';
 import authRoutes from './routes/authRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import adminAuthRoutes from './routes/adminAuthRoutes.js';
 
 // Middleware imports
 import errorHandler from './middleware/errorHandler.js';
@@ -29,6 +30,12 @@ if (!process.env.CLERK_SECRET_KEY) {
   console.error('ERROR: CLERK_SECRET_KEY is not set in environment variables');
   console.error('Please add CLERK_SECRET_KEY to your .env file');
   process.exit(1);
+}
+
+// Check for JWT_SECRET environment variable
+if (!process.env.JWT_SECRET) {
+  console.warn('WARNING: JWT_SECRET is not set in environment variables');
+  console.warn('Using default secret for JWT. This is not secure for production.');
 }
 
 const app = express();
@@ -72,6 +79,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminAuthRoutes); // Admin authentication routes
 
 // Test route
 app.get('/', (req, res) => {

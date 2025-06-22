@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { assets } from '../assets/assets';
 import { useClerk, UserButton, useUser } from '@clerk/clerk-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import useAdminAuth from '../hooks/useAdminAuth';
 
 const Navbar = ({ title }) => {
   const { openSignIn } = useClerk();
   const { user } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAdmin, adminRole, adminName, logout: adminLogout, checkAdminStatus } = useAdminAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -17,17 +19,15 @@ const Navbar = ({ title }) => {
   const isRequestsPage = location.pathname === '/requests';
   const isAdminLoginPage = location.pathname === '/admin-login';
 
-  // Check if the user has an admin role (either from Clerk or localStorage)
-  const isAdmin = (user && user.publicMetadata?.role) || localStorage.getItem('adminRole') ? true : false;
+  // Check admin status when location changes (e.g., after login redirect)
+  useEffect(() => {
+    checkAdminStatus();
+  }, [location.pathname, checkAdminStatus]);
 
   // Get dashboard link based on role
   const getDashboardLink = () => {
-    const clerkRole = user?.publicMetadata?.role;
-    const localRole = localStorage.getItem('adminRole');
-    const role = clerkRole || localRole;
-
-    if (role === 'department_head') return '/department/dashboard';
-    if (role === 'finance_officer') return '/finance/dashboard';
+    if (adminRole === 'department_head') return '/department/dashboard';
+    if (adminRole === 'finance_officer') return '/finance/dashboard';
     return '/';
   };
 
@@ -48,8 +48,8 @@ const Navbar = ({ title }) => {
 
   // Admin links - will be shown conditionally based on role
   const adminLinks = [
-    { title: 'Department Head Dashboard', path: '/department/dashboard' },
-    { title: 'Finance Dashboard', path: '/finance/dashboard' },
+    { title: 'Department Dashboard', path: '/department/dashboard', role: 'department_head' },
+    { title: 'Finance Dashboard', path: '/finance/dashboard', role: 'finance_officer' },
   ];
 
   // Click outside & ESC key handling for modal
@@ -92,11 +92,11 @@ const Navbar = ({ title }) => {
   };
 
   const handleLogout = () => {
-    // Simple logout without using Clerk - just redirect to home page
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminRole');
-    navigate('/');
-    window.location.reload(); // Force reload to clear any auth state
+    if (isAdmin) {
+      adminLogout();
+    } else {
+      // Regular user logout handled by Clerk
+    }
   };
 
   // Animation for modal entry
@@ -109,6 +109,13 @@ const Navbar = ({ title }) => {
     return location.pathname === path;
   };
 
+  // Get the appropriate admin link based on role
+  const getAdminDashboardLink = () => {
+    return adminLinks.find(link => link.role === adminRole);
+  };
+
+  const adminDashboardLink = getAdminDashboardLink();
+
   return (
     <>
       <div className={`shadow py-0 relative z-20 bg-white ${isModalOpen ? 'backdrop-blur-sm' : ''}`}>
@@ -119,7 +126,7 @@ const Navbar = ({ title }) => {
               <img src={assets.logo} alt="Logo" />
             </Link>
 
-            {user && !isAdminLoginPage && (
+            {user && !isAdmin && !isAdminLoginPage && (
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="bg-gradient-to-r from-blue-900 to-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap group ml-4 hidden sm:flex"
@@ -140,7 +147,7 @@ const Navbar = ({ title }) => {
           </div>
 
           {/* Navigation Links - Centered when user is logged in */}
-          <div className={`hidden md:flex items-center space-x-1 ${user ? 'mx-auto' : 'ml-6'}`}>
+          <div className={`hidden md:flex items-center space-x-1 ${user || isAdmin ? 'mx-auto' : 'ml-6'}`}>
             {navLinks.map((link) => (
               <Link
                 key={link.path}
@@ -155,26 +162,6 @@ const Navbar = ({ title }) => {
                   }`}></span>
               </Link>
             ))}
-
-            {/* Admin Dashboard Links */}
-            {user && user.publicMetadata?.role && (
-              <>
-                {adminLinks.map((link) => (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    className={`px-4 py-5 transition-all duration-200 font-medium relative group ${isActive(link.path)
-                      ? 'text-blue-600'
-                      : 'text-gray-700 hover:text-blue-600'
-                      }`}
-                  >
-                    {link.title}
-                    <span className={`absolute bottom-0 left-0 w-full h-1 bg-blue-600 transform transition-transform duration-300 ${isActive(link.path) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                      }`}></span>
-                  </Link>
-                ))}
-              </>
-            )}
           </div>
 
           {title && <div className="text-xl font-semibold">{title}</div>}
@@ -196,52 +183,58 @@ const Navbar = ({ title }) => {
           {/* User Profile or Login Buttons */}
           {user ? (
             <div className="hidden md:flex items-center gap-3">
-              <Link
-                className={`transition-colors duration-200 ${isRequestsPage
-                  ? 'text-blue-600 font-medium border-b-2 border-blue-600 pb-1'
-                  : 'hover:text-blue-600 hover:border-b-2 hover:border-blue-600 pb-1'
-                  }`}
-                to={'/requests'}
-              >
-                My Requests
-              </Link>
-              <p> | </p>
+              {!isAdmin && (
+                <>
+                  <Link
+                    className={`transition-colors duration-200 ${isRequestsPage
+                      ? 'text-blue-600 font-medium border-b-2 border-blue-600 pb-1'
+                      : 'hover:text-blue-600 hover:border-b-2 hover:border-blue-600 pb-1'
+                      }`}
+                    to={'/requests'}
+                  >
+                    My Requests
+                  </Link>
+                  <p> | </p>
+                </>
+              )}
               <p className="max-sm:hidden">Hi, {user.firstName + ' ' + user.lastName}</p>
               <UserButton />
             </div>
-          ) : (
-            <div className="hidden md:flex gap-4 max-sm:text-sm">
-              {isAdmin ? (
+          ) : isAdmin ? (
+            <div className="hidden md:flex items-center gap-3">
+              {adminDashboardLink && (
                 <>
                   <Link
-                    to={getDashboardLink()}
-                    className={`px-4 py-2 transition-all duration-200 font-medium relative group ${isActive(getDashboardLink()) ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
+                    to={adminDashboardLink.path}
+                    className={`transition-colors duration-200 ${isActive(adminDashboardLink.path)
+                      ? 'text-blue-600 font-medium border-b-2 border-blue-600 pb-1'
+                      : 'hover:text-blue-600 hover:border-b-2 hover:border-blue-600 pb-1'
                       }`}
                   >
-                    My Dashboard
-                    <span className={`absolute bottom-0 left-0 w-full h-1 bg-blue-600 transform transition-transform duration-300 ${isActive(getDashboardLink()) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                      }`}></span>
+                    {adminDashboardLink.title}
                   </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="bg-blue-600 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05]"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button onClick={handleAdminLogin} className="text-gray-600 hover:text-blue-600">
-                    Admin Login
-                  </button>
-                  <button
-                    onClick={handleRegularLogin}
-                    className="bg-blue-600 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05]"
-                  >
-                    Login
-                  </button>
+                  <p> | </p>
                 </>
               )}
+              <p className="max-sm:hidden">Hi, {adminName}</p>
+              <button
+                onClick={adminLogout}
+                className="ml-4 bg-blue-600 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05]"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div className="hidden md:flex gap-4 max-sm:text-sm">
+              <button onClick={handleAdminLogin} className="text-gray-600 hover:text-blue-600">
+                Admin Login
+              </button>
+              <button
+                onClick={handleRegularLogin}
+                className="bg-blue-600 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05]"
+              >
+                Login
+              </button>
             </div>
           )}
         </div>
@@ -281,28 +274,23 @@ const Navbar = ({ title }) => {
               ))}
 
               {/* Admin Links - show for admins */}
-              {user && user.publicMetadata?.role && (
-                <>
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h3 className="text-sm font-semibold text-gray-500 mb-2 px-4">Admin Dashboards</h3>
-                    {adminLinks.map((link) => (
-                      <Link
-                        key={link.path}
-                        to={link.path}
-                        className={`block px-4 py-2 rounded-lg transition-colors ${isActive(link.path)
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                          }`}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        {link.title}
-                      </Link>
-                    ))}
-                  </div>
-                </>
+              {isAdmin && adminDashboardLink && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-500 mb-2 px-4">Admin Dashboard</h3>
+                  <Link
+                    to={adminDashboardLink.path}
+                    className={`block px-4 py-2 rounded-lg transition-colors ${isActive(adminDashboardLink.path)
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                      }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {adminDashboardLink.title}
+                  </Link>
+                </div>
               )}
 
-              {user && (
+              {user && !isAdmin && (
                 <>
                   <Link
                     to="/requests"
@@ -336,49 +324,40 @@ const Navbar = ({ title }) => {
                 </>
               )}
 
-              {!user && (
+              {!user && !isAdmin && (
                 <div className="pt-4 mt-4 border-t border-gray-200">
-                  {isAdmin ? (
-                    <>
-                      <Link
-                        to={getDashboardLink()}
-                        className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg mb-3 block text-center"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        My Dashboard
-                      </Link>
-                      <button
-                        onClick={() => {
-                          handleLogout();
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg"
-                      >
-                        Logout
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => {
-                          handleRegularLogin();
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg mb-3"
-                      >
-                        Login
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleAdminLogin();
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg"
-                      >
-                        Admin Login
-                      </button>
-                    </>
-                  )}
+                  <button
+                    onClick={() => {
+                      handleRegularLogin();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg mb-3"
+                  >
+                    Login
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleAdminLogin();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg"
+                  >
+                    Admin Login
+                  </button>
+                </div>
+              )}
+
+              {isAdmin && (
+                <div className="pt-4 mt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      adminLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg"
+                  >
+                    Logout
+                  </button>
                 </div>
               )}
             </div>
@@ -392,59 +371,61 @@ const Navbar = ({ title }) => {
       )}
 
       {/* Modal Dialog */}
-      <div
-        ref={modalRef}
-        className={`border border-blue-200 fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-xl p-6 shadow-2xl z-50 transition-all duration-300 ease-out ${modalAnimation}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-      >
-        <div className="flex justify-between items-center mb-4 border-b pb-3">
-          <h2 id="modal-title" className="text-xl font-bold text-gray-800">Reimbursement Options</h2>
-          <button
-            onClick={() => setIsModalOpen(false)}
-            className="text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full p-1 transition-colors"
-            aria-label="Close modal"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+      {isModalOpen && (
+        <div
+          ref={modalRef}
+          className={`border border-blue-200 fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-xl p-6 shadow-2xl z-50 transition-all duration-300 ease-out ${modalAnimation}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
+          <div className="flex justify-between items-center mb-4 border-b pb-3">
+            <h2 id="modal-title" className="text-xl font-bold text-gray-800">Reimbursement Options</h2>
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full p-1 transition-colors"
+              aria-label="Close modal"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
-        <div className="max-h-[calc(100vh-240px)] overflow-y-auto my-2">
-          {paymentOptions.map((option, index) => (
+          <div className="max-h-[calc(100vh-240px)] overflow-y-auto my-2">
+            {paymentOptions.map((option, index) => (
+              <Link
+                key={index}
+                ref={index === 0 ? firstModalLinkRef : null}
+                to={option.link}
+                className="px-4 py-4 hover:bg-blue-100 rounded-lg text-gray-800 mb-2 flex items-start transition-colors duration-200 group"
+                onClick={() => setIsModalOpen(false)}
+              >
+                <span className="text-2xl mr-4 mt-1 group-hover:scale-110 transition-transform duration-200">{option.icon}</span>
+                <div>
+                  <div className="text-base font-semibold text-blue-700 group-hover:text-blue-800">{option.title}</div>
+                  <div className="text-sm text-gray-500 whitespace-nowrap text-ellipsis max-w-[200px]">{option.description}</div>
+                </div>
+                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-5 pt-3 border-t">
             <Link
-              key={index}
-              ref={index === 0 ? firstModalLinkRef : null}
-              to={option.link}
-              className="px-4 py-4 hover:bg-blue-100 rounded-lg text-gray-800 mb-2 flex items-start transition-colors duration-200 group"
+              to="/requests"
+              className="block w-full text-center bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
               onClick={() => setIsModalOpen(false)}
             >
-              <span className="text-2xl mr-4 mt-1 group-hover:scale-110 transition-transform duration-200">{option.icon}</span>
-              <div>
-                <div className="text-base font-semibold text-blue-700 group-hover:text-blue-800">{option.title}</div>
-                <div className="text-sm text-gray-500 whitespace-nowrap text-ellipsis max-w-[200px]">{option.description}</div>
-              </div>
-              <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
+              View My Requests
             </Link>
-          ))}
+          </div>
         </div>
-
-        <div className="mt-5 pt-3 border-t">
-          <Link
-            to="/requests"
-            className="block w-full text-center bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
-            onClick={() => setIsModalOpen(false)}
-          >
-            View My Requests
-          </Link>
-        </div>
-      </div>
+      )}
     </>
   );
 };

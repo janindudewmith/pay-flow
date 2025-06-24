@@ -52,10 +52,12 @@ const HeadDashboard = () => {
     return null;
   };
 
-  // Get department from localStorage or user email
-  const adminDepartment = localStorage.getItem('adminDepartment');
-  const adminEmail = localStorage.getItem('adminEmail');
-  const adminName = localStorage.getItem('adminName');
+  // Get department from localStorage adminInfo object or user email
+  const adminInfoStr = localStorage.getItem('adminInfo');
+  const adminInfo = adminInfoStr ? JSON.parse(adminInfoStr) : null;
+  const adminDepartment = adminInfo?.department;
+  const adminEmail = adminInfo?.email;
+  const adminName = adminInfo?.name;
 
   const userDepartment = adminDepartment || (user ? getDepartmentFromEmail(user.primaryEmailAddress?.emailAddress) : null);
 

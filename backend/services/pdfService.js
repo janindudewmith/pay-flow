@@ -256,7 +256,7 @@ const generatePettyCashContent = (formData) => {
       
       <div class="form-group">
         <span class="form-label">Amount (Rs):</span>
-        <span class="form-value">${data.amountRs || '0'}.${data.amountCts || '00'}</span>
+        <span class="form-value">${data.amountRs || '0'}</span>
       </div>
       
       <div class="form-group">

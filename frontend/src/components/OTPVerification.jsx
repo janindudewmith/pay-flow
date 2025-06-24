@@ -10,6 +10,21 @@ const OTPVerification = ({ email, onSuccess }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(300);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+
+  // Check if already verified in this session
+  useEffect(() => {
+    // Small delay to prevent flashing
+    const checkVerificationTimeout = setTimeout(() => {
+      const otpVerifiedInSession = sessionStorage.getItem('otpVerified') === 'true';
+      if (otpVerifiedInSession) {
+        onSuccess();
+      }
+      setCheckingStatus(false);
+    }, 300);
+
+    return () => clearTimeout(checkVerificationTimeout);
+  }, [onSuccess]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -29,6 +44,9 @@ const OTPVerification = ({ email, onSuccess }) => {
         otp,
       });
       if (response.data.success) {
+        // Mark as verified in session storage
+        sessionStorage.setItem('otpVerified', 'true');
+        localStorage.setItem('otpVerified', 'true');
         if (onSuccess) onSuccess();
       } else {
         setError(response.data.message || 'Error verifying OTP');
@@ -47,6 +65,8 @@ const OTPVerification = ({ email, onSuccess }) => {
       await axios.post('http://localhost:5000/api/otp/send', { email });
       setTimer(300);
       setOtp('');
+      // Update session storage to indicate OTP was sent
+      sessionStorage.setItem('otpSentThisSession', 'true');
     } catch (error) {
       setError(error.response?.data?.message || 'Error sending OTP');
     } finally {
@@ -56,6 +76,10 @@ const OTPVerification = ({ email, onSuccess }) => {
 
   const handleGoHome = async () => {
     try {
+      // Clear OTP session data
+      sessionStorage.removeItem('otpSentThisSession');
+      sessionStorage.removeItem('otpVerified');
+      localStorage.removeItem('otpVerified');
       await signOut();
       navigate('/');
     } catch (error) {
@@ -63,6 +87,17 @@ const OTPVerification = ({ email, onSuccess }) => {
       navigate('/');
     }
   };
+
+  // Show loading spinner while checking verification status
+  if (checkingStatus) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full mx-4 flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -89,7 +124,7 @@ const OTPVerification = ({ email, onSuccess }) => {
               </div>
             )}
           </div>
-          
+
           <div className="flex flex-col gap-4">
             <button
               type="button"
@@ -98,7 +133,7 @@ const OTPVerification = ({ email, onSuccess }) => {
             >
               ← Go Home
             </button>
-            
+
             <div className="flex gap-3">
               <button
                 type="button"

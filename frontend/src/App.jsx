@@ -27,22 +27,77 @@ const App = () => {
   const { isSignedIn, user } = useUser();
   const { otpVerified, setOtpVerified } = useOtp();
   const [otpSent, setOtpSent] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true);
 
+  // Check if verification is needed or already completed
   useEffect(() => {
-    if (isSignedIn && user && !otpSent) {
+    if (isSignedIn) {
+      // Check if already verified in this session
+      const otpVerifiedInSession = sessionStorage.getItem('otpVerified') === 'true';
+
+      if (otpVerifiedInSession && !otpVerified) {
+        // If verified in session but not in context, update context
+        setOtpVerified(true);
+      }
+
+      // Set verifying to false after checking
+      setIsVerifying(false);
+    } else {
+      // Not signed in, no verification needed
+      setIsVerifying(false);
+    }
+  }, [isSignedIn, otpVerified, setOtpVerified]);
+
+  // Handle OTP sending
+  useEffect(() => {
+    // We'll use sessionStorage to track if OTP was already sent in this browser session
+    const otpSentThisSession = sessionStorage.getItem('otpSentThisSession') === 'true';
+
+    if (isSignedIn && user && !otpVerified && !otpSentThisSession && !isVerifying) {
       fetch('http://localhost:5000/api/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: user.primaryEmailAddress.emailAddress }),
-      }).then(() => setOtpSent(true));
+      })
+        .then(() => {
+          setOtpSent(true);
+          // Mark that OTP was sent in this session
+          sessionStorage.setItem('otpSentThisSession', 'true');
+        })
+        .catch(error => {
+          console.error('Error sending OTP:', error);
+        });
     }
-  }, [isSignedIn, user, otpSent]);
+  }, [isSignedIn, user, otpVerified, isVerifying]);
 
+  // Clear session marker when user logs out
+  useEffect(() => {
+    if (!isSignedIn) {
+      sessionStorage.removeItem('otpSentThisSession');
+      sessionStorage.removeItem('otpVerified');
+      setOtpVerified(false);
+    }
+  }, [isSignedIn, setOtpVerified]);
+
+  // Show loading spinner while verifying
+  if (isVerifying) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // Show OTP verification if needed
   if (isSignedIn && !otpVerified) {
     return (
       <OTPVerification
         email={user.primaryEmailAddress.emailAddress}
-        onSuccess={() => setOtpVerified(true)}
+        onSuccess={() => {
+          setOtpVerified(true);
+          // Mark verification as complete for this session
+          sessionStorage.setItem('otpVerified', 'true');
+        }}
       />
     );
   }

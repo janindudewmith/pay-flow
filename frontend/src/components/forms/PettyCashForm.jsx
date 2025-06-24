@@ -17,7 +17,6 @@ const PettyCashForm = () => {
     department: '',
     dateRequested: new Date().toISOString().split('T')[0],
     amountRs: '',
-    amountCts: '',
     reasonForRequest: '',
     expectedSpendingDate: '',
     declarationAmount: '',
@@ -42,7 +41,7 @@ const PettyCashForm = () => {
     // Validate required fields
     const requiredFields = [
       'requestorName', 'position', 'department', 'amountRs',
-      'amountCts', 'reasonForRequest', 'expectedSpendingDate'
+      'reasonForRequest', 'expectedSpendingDate'
     ];
 
     const missingFields = requiredFields.filter(field => !basicInfo[field]);
@@ -115,7 +114,7 @@ const PettyCashForm = () => {
       });
 
       let errorMessage = 'Error submitting form. ';
-      
+
       if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
@@ -127,7 +126,7 @@ const PettyCashForm = () => {
         // Something happened in setting up the request that triggered an Error
         errorMessage += error.message;
       }
-      
+
       alert(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -261,7 +260,7 @@ const PettyCashForm = () => {
         </div>
 
         {/* Amount and Date Section - All in one row */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Amount Required (Rs.)</label>
             <input
@@ -272,20 +271,6 @@ const PettyCashForm = () => {
               className="w-full p-2 border border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
               required
               min="0"
-              disabled={submitted}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">(Cts.)</label>
-            <input
-              type="number"
-              name="amountCts"
-              value={basicInfo.amountCts}
-              onChange={handleBasicInfoChange}
-              className="w-full p-2 border border-gray-300 rounded appearance-none bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
-              required
-              min="0"
-              max="99"
               disabled={submitted}
             />
           </div>

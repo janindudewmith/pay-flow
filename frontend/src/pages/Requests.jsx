@@ -87,8 +87,45 @@ const Requests = () => {
     }
   };
 
+  // Function to get display status from backend status
+  const getDisplayStatus = (status) => {
+    switch (status) {
+      case 'pending_hod_approval':
+        return 'PENDING HOD APPROVAL';
+      case 'pending_finance_approval':
+        return 'PENDING FINANCE APPROVAL';
+      case 'approved':
+        return 'APPROVED';
+      case 'rejected':
+        return 'REJECTED';
+      case 'cancelled':
+        return 'CANCELLED';
+      default:
+        return status.toUpperCase();
+    }
+  };
+
+  // Function to get status class based on status
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-800';
+      case 'pending_finance_approval':
+        return 'bg-blue-100 text-blue-800';
+      case 'pending_hod_approval':
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
   // Calculate summary counts
-  const pendingCount = requests.filter(r => r.status === 'pending_hod_approval' || r.status === 'pending_finance_approval').length;
+  const pendingHodCount = requests.filter(r => r.status === 'pending_hod_approval').length;
+  const pendingFinanceCount = requests.filter(r => r.status === 'pending_finance_approval').length;
+  const pendingCount = pendingHodCount + pendingFinanceCount;
   const approvedCount = requests.filter(r => r.status === 'approved').length;
   const rejectedCount = requests.filter(r => r.status === 'rejected').length;
   const totalCount = requests.length;
@@ -145,12 +182,8 @@ const Requests = () => {
                       <td className="py-3 px-4">{request.formType.replace('_', ' ').toUpperCase()}</td>
                       <td className="py-3 px-4">{new Date(request.createdAt).toLocaleDateString()}</td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${request.status === 'approved' ? 'bg-green-100 text-green-800' :
-                          request.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                            request.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
-                              'bg-yellow-100 text-yellow-800'
-                          }`}>
-                          {request.status.toUpperCase()}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(request.status)}`}>
+                          {getDisplayStatus(request.status)}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -182,13 +215,8 @@ const Requests = () => {
                                 <h3 className="font-medium text-gray-800 mb-2">Approval Status</h3>
                                 <div className="flex items-center mb-1">
                                   <span className="text-sm text-gray-600 w-40">Current Status:</span>
-                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${request.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                    request.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                      request.status === 'pending_hod_approval' ? 'bg-yellow-100 text-yellow-800' :
-                                        request.status === 'pending_finance_approval' ? 'bg-blue-100 text-blue-800' :
-                                          'bg-gray-100 text-gray-800'
-                                    }`}>
-                                    {request.status.replace(/_/g, ' ').toUpperCase()}
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(request.status)}`}>
+                                    {getDisplayStatus(request.status)}
                                   </span>
                                 </div>
                               </div>

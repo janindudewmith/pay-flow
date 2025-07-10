@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { assets } from '../assets/assets';
-import { useClerk, UserButton, useUser } from '@clerk/clerk-react';
+import { useClerk, UserButton, useUser, useAuth } from '@clerk/clerk-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAdminAuth from '../hooks/useAdminAuth';
 import { getApiWithToken } from '../utils/axios';
@@ -8,6 +8,7 @@ import { getApiWithToken } from '../utils/axios';
 const Navbar = ({ title }) => {
   const { openSignIn } = useClerk();
   const { user } = useUser();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAdmin, adminRole, adminName, logout: adminLogout, checkAdminStatus } = useAdminAuth();
@@ -146,6 +147,7 @@ const Navbar = ({ title }) => {
       adminLogout();
     } else {
       // Regular user logout handled by Clerk
+      signOut();
     }
   };
 
@@ -236,7 +238,7 @@ const Navbar = ({ title }) => {
             </svg>
           </button>
 
-          {/* User Profile or Login Buttons */}
+          {/* User Profile or Login Buttons - Enhanced with better styling and functionality */}
           {user ? (
             <div className="hidden md:flex items-center gap-3">
               {!isAdmin && (
@@ -253,11 +255,22 @@ const Navbar = ({ title }) => {
                       {requestCount}
                     </span>
                   </Link>
-                  <p> | </p>
+                  <p className="text-gray-400"> | </p>
                 </>
               )}
-              <p className="max-sm:hidden">Hi, {user.firstName + ' ' + user.lastName}</p>
+              <p className="max-sm:hidden text-gray-700 font-medium">Hi, {user.firstName + ' ' + user.lastName}</p>
               <UserButton />
+              {!isAdmin && (
+                <>
+                  <p className="text-gray-400"> | </p>
+                  <button
+                    onClick={() => signOut()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05] shadow-md hover:shadow-lg"
+                  >
+                    Log Out
+                  </button>
+                </>
+              )}
             </div>
           ) : isAdmin ? (
             <div className="hidden md:flex items-center gap-3">
@@ -272,25 +285,28 @@ const Navbar = ({ title }) => {
                   >
                     {adminDashboardLink.title}
                   </Link>
-                  <p> | </p>
+                  <p className="text-gray-400"> | </p>
                 </>
               )}
-              <p className="max-sm:hidden">Hi, {adminName}</p>
+              <p className="max-sm:hidden text-gray-700 font-medium">Hi, {adminName}</p>
               <button
                 onClick={adminLogout}
-                className="ml-4 bg-blue-600 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05]"
+                className="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05] shadow-md hover:shadow-lg"
               >
                 Logout
               </button>
             </div>
           ) : (
             <div className="hidden md:flex gap-4 max-sm:text-sm">
-              <button onClick={handleAdminLogin} className="text-gray-600 hover:text-blue-600">
+              <button 
+                onClick={handleAdminLogin} 
+                className="text-gray-600 hover:text-blue-600 transition-colors duration-200 font-medium"
+              >
                 Admin Login
               </button>
               <button
                 onClick={handleRegularLogin}
-                className="bg-blue-600 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05]"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05] shadow-md hover:shadow-lg"
               >
                 Login
               </button>
@@ -305,11 +321,11 @@ const Navbar = ({ title }) => {
             }`}
         >
           <div className="p-5">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-800">Menu</h2>
+            <div className="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+              <h2 className="text-xl font-bold text-gray-800">Navigation Menu</h2>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="text-gray-500 hover:text-gray-800"
+                className="text-gray-500 hover:text-gray-800 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -335,12 +351,12 @@ const Navbar = ({ title }) => {
               {/* Admin Links - show for admins */}
               {isAdmin && adminDashboardLink && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-500 mb-2 px-4">Admin Dashboard</h3>
+                  <h3 className="text-sm font-semibold text-gray-500 mb-3 px-4 uppercase tracking-wide">Admin Dashboard</h3>
                   <Link
                     to={adminDashboardLink.path}
-                    className={`block px-4 py-2 rounded-lg transition-colors ${isActive(adminDashboardLink.path)
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                    className={`block px-4 py-3 rounded-lg transition-all duration-200 ${isActive(adminDashboardLink.path)
+                      ? 'bg-blue-100 text-blue-700 font-medium shadow-sm'
+                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600 hover:shadow-sm'
                       }`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -354,13 +370,13 @@ const Navbar = ({ title }) => {
                   <Link
                     to="/requests"
                     className={`block px-4 py-2 rounded-lg transition-colors ${isRequestsPage
-                      ? 'bg-blue-100 text-blue-700'
+                      ? 'bg-blue-100 text-blue-700 font-medium'
                       : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
                       } relative`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     My Requests
-                    <span className="absolute top-1 right-3 bg-red-500 text-white text-xs leading-none px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    <span className="absolute top-1 right-3 bg-red-500 text-white text-xs leading-none px-1.5 py-0.5 rounded-full min-w-[18px] text-center font-bold">
                       {requestCount}
                     </span>
                   </Link>
@@ -369,9 +385,9 @@ const Navbar = ({ title }) => {
                       setIsModalOpen(true);
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full mt-2 bg-gradient-to-r from-blue-900 to-blue-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2"
+                    className="w-full mt-2 bg-gradient-to-r from-blue-900 to-blue-600 hover:from-blue-800 hover:to-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
                   >
-                    <span>Request New Payment</span>
+                    <span className="font-medium">Request New Payment</span>
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -383,6 +399,15 @@ const Navbar = ({ title }) => {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
+                  <button
+                    onClick={() => {
+                      signOut();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+                  >
+                    Log Out
+                  </button>
                 </>
               )}
 
@@ -393,7 +418,7 @@ const Navbar = ({ title }) => {
                       handleRegularLogin();
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg mb-3"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mb-3 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
                   >
                     Login
                   </button>
@@ -402,7 +427,7 @@ const Navbar = ({ title }) => {
                       handleAdminLogin();
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg"
+                    className="w-full border border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-800 px-4 py-2 rounded-lg transition-all duration-200 font-medium"
                   >
                     Admin Login
                   </button>
@@ -416,7 +441,7 @@ const Navbar = ({ title }) => {
                       adminLogout();
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium"
                   >
                     Logout
                   </button>

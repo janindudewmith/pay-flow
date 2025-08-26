@@ -22,6 +22,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import ScrollToTop from './components/ScrollToTop';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import UserOnlyRoute from './components/UserOnlyRoute';
+import LearnMore from './pages/LearnMore';
 
 const App = () => {
   const { isSignedIn, user } = useUser();
@@ -161,6 +162,7 @@ const App = () => {
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<ContactUs />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/learn-more" element={<LearnMore />} />
       </Routes>
       <Footer />
       <ScrollToTop />

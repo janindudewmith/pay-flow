@@ -1,9 +1,21 @@
 import React from 'react';
 import { assets } from '../assets/assets';
 import { useClerk } from '@clerk/clerk-react';
+import { useUser } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
 
 const Banner = () => {
   const { openSignIn } = useClerk();
+  const { isSignedIn } = useUser();
+  const navigate = useNavigate();
+
+  const onGetStarted = () => {
+    if (isSignedIn) {
+      window.dispatchEvent(new Event('open-request-modal'));
+    } else {
+      openSignIn();
+    }
+  };
 
   return (
     <div className="py-8 px-6 md:px-10">
@@ -18,13 +30,13 @@ const Banner = () => {
 
         <div className="flex flex-col sm:flex-row items-center font-medium gap-4 mt-2">
           <button
-            onClick={() => openSignIn()}
+            onClick={onGetStarted}
             className="px-8 py-2 rounded-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300"
           >
             Get started
           </button>
 
-          <button className="flex items-center gap-2 hover:text-blue-700 group transition-all duration-300 ease-in-out px-3 py-1">
+          <button onClick={() => navigate('/learn-more')} className="flex items-center gap-2 hover:text-blue-700 group transition-all duration-300 ease-in-out px-3 py-1">
             <span>Learn more</span>
             <div className="bg-blue-100 rounded-full p-1 group-hover:bg-blue-200 transition-colors duration-300">
               <img

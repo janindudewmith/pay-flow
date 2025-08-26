@@ -172,23 +172,25 @@ const Navbar = ({ title }) => {
             )}
           </div>
 
-          {/* Navigation Links - Centered when user is logged in */}
-          <div className={`hidden md:flex items-center space-x-1 ${user || isAdmin ? 'mx-auto' : 'ml-6'}`}>
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`px-4 py-5 transition-all duration-200 font-medium relative group ${isActive(link.path)
-                  ? 'text-blue-600'
-                  : 'text-gray-700 hover:text-blue-600'
-                  }`}
-              >
-                {link.title}
-                <span className={`absolute bottom-0 left-0 w-full h-1 bg-blue-600 transform transition-transform duration-300 ${isActive(link.path) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                  }`}></span>
-              </Link>
-            ))}
-          </div>
+          {/* Navigation Links - hide for admins */}
+          {!isAdmin && (
+            <div className={`hidden md:flex items-center space-x-1 ${user ? 'mx-auto' : 'ml-6'}`}>
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`px-4 py-5 transition-all duration-200 font-medium relative group ${isActive(link.path)
+                    ? 'text-blue-600'
+                    : 'text-gray-700 hover:text-blue-600'
+                    }`}
+                >
+                  {link.title}
+                  <span className={`absolute bottom-0 left-0 w-full h-1 bg-blue-600 transform transition-transform duration-300 ${isActive(link.path) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                    }`}></span>
+                </Link>
+              ))}
+            </div>
+          )}
 
           {title && <div className="text-xl font-semibold">{title}</div>}
 
@@ -288,7 +290,7 @@ const Navbar = ({ title }) => {
             </div>
 
             <div className="space-y-3">
-              {navLinks.map((link) => (
+              {!isAdmin && navLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}

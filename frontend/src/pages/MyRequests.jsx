@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useClerk } from '@clerk/clerk-react';
-import axios from 'axios';
+import { getApiWithToken } from '../utils/axios';
 import useRealTimeUpdates from '../hooks/useRealTimeUpdates';
 
 const MyRequests = () => {
@@ -12,8 +12,9 @@ const MyRequests = () => {
   // Fetch user's requests
   const fetchRequests = async () => {
     try {
-      const response = await axios.get('/api/forms/user');
-      setRequests(response.data.data);
+      const api = await getApiWithToken();
+      const response = await api.get('/api/forms/my-forms');
+      setRequests(response.data.data || []);
       setError(null);
     } catch (err) {
       setError('Failed to fetch requests');
@@ -28,7 +29,6 @@ const MyRequests = () => {
     switch (data.type) {
       case 'form_approved':
       case 'form_rejected':
-        // Update the specific form in the list
         setRequests(prevRequests =>
           prevRequests.map(request =>
             request._id === data.form._id ? data.form : request
@@ -36,7 +36,6 @@ const MyRequests = () => {
         );
         break;
       case 'new_form':
-        // Add new form to the list
         setRequests(prevRequests => [...prevRequests, data.form]);
         break;
       default:

@@ -3,10 +3,12 @@ import { assets } from '../assets/assets';
 import { Link } from 'react-router-dom';
 import axios from '../utils/axios';
 import { toast } from 'react-toastify';
+import useAdminAuth from '../hooks/useAdminAuth';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const { isAdmin } = useAdminAuth();
 
   const handleSubscribe = async () => {
     // Validate email
@@ -46,9 +48,9 @@ const Footer = () => {
         <div className='flex flex-col md:items-start items-center w-full'>
           <h2 className='font-semibold text-white mt-5 mb-3'>Our platform</h2>
           <ul className='flex md:flex-col w-full justify-between text-sm text-white/80 md:space-y-2'>
-            <li><Link to="/">Home</Link></li>
-            <li><Link to="/about">About us</Link></li>
-            <li><Link to="/contact">Contact us</Link></li>
+            {!isAdmin && <li><Link to="/">Home</Link></li>}
+            {!isAdmin && <li><Link to="/about">About us</Link></li>}
+            {!isAdmin && <li><Link to="/contact">Contact us</Link></li>}
             <li><Link to="/privacy-policy">Privacy policy</Link></li>
           </ul>
         </div>

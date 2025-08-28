@@ -3,6 +3,7 @@ import { assets } from '../assets/assets';
 import { useClerk, UserButton, useUser } from '@clerk/clerk-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAdminAuth from '../hooks/useAdminAuth';
+import { getApiWithToken } from '../utils/axios';
 
 const Navbar = ({ title }) => {
   const { openSignIn } = useClerk();
@@ -13,16 +14,65 @@ const Navbar = ({ title }) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showLoginSuccess, setShowLoginSuccess] = useState(false);
   const modalRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const firstModalLinkRef = useRef(null);
+  const hasShownForThisSessionRef = useRef(false);
   const isRequestsPage = location.pathname === '/requests';
   const isAdminLoginPage = location.pathname === '/admin-login';
+
+  const [requestCount, setRequestCount] = useState(0);
+
+  // Listen for global event to open the Request New Payment modal
+  useEffect(() => {
+    const handler = () => setIsModalOpen(true);
+    window.addEventListener('open-request-modal', handler);
+    return () => window.removeEventListener('open-request-modal', handler);
+  }, []);
 
   // Check admin status when location changes (e.g., after login redirect)
   useEffect(() => {
     checkAdminStatus();
   }, [location.pathname, checkAdminStatus]);
+
+  // Listen for explicit login success events (e.g., admin login)
+  useEffect(() => {
+    const onLoginSuccess = () => {
+      setShowLoginSuccess(true);
+      window.setTimeout(() => setShowLoginSuccess(false), 3000);
+    };
+    window.addEventListener('login-success', onLoginSuccess);
+    return () => window.removeEventListener('login-success', onLoginSuccess);
+  }, []);
+
+  // Show banner when Clerk user just signed in (first time this session)
+  useEffect(() => {
+    if (user && !hasShownForThisSessionRef.current && !isAdmin) {
+      hasShownForThisSessionRef.current = true;
+      setShowLoginSuccess(true);
+      window.setTimeout(() => setShowLoginSuccess(false), 3000);
+    }
+  }, [user, isAdmin]);
+
+  // Fetch current user's request count
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        if (!user || isAdmin) {
+          setRequestCount(0);
+          return;
+        }
+        const api = await getApiWithToken();
+        const res = await api.get('/api/forms/my-forms');
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
+        setRequestCount(list.length);
+      } catch (e) {
+        setRequestCount(0);
+      }
+    };
+    fetchCount();
+  }, [user, isAdmin, location.pathname]);
 
   // Get dashboard link based on role
   const getDashboardLink = () => {
@@ -73,10 +123,10 @@ const Navbar = ({ title }) => {
     if (isModalOpen || isMobileMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'hidden'; // lock scroll
+      document.body.style.overflow = 'hidden';
       if (isModalOpen) firstModalLinkRef.current?.focus();
     } else {
-      document.body.style.overflow = ''; // unlock scroll
+      document.body.style.overflow = '';
     }
 
     return () => {
@@ -99,17 +149,14 @@ const Navbar = ({ title }) => {
     }
   };
 
-  // Animation for modal entry
   const modalAnimation = isModalOpen
     ? "opacity-100 visible scale-100"
     : "opacity-0 invisible scale-95";
 
-  // Check if a nav link is active
   const isActive = (path) => {
     return location.pathname === path;
   };
 
-  // Get the appropriate admin link based on role
   const getAdminDashboardLink = () => {
     return adminLinks.find(link => link.role === adminRole);
   };
@@ -146,25 +193,34 @@ const Navbar = ({ title }) => {
             )}
           </div>
 
-          {/* Navigation Links - Centered when user is logged in */}
-          <div className={`hidden md:flex items-center space-x-1 ${user || isAdmin ? 'mx-auto' : 'ml-6'}`}>
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`px-4 py-5 transition-all duration-200 font-medium relative group ${isActive(link.path)
-                  ? 'text-blue-600'
-                  : 'text-gray-700 hover:text-blue-600'
-                  }`}
-              >
-                {link.title}
-                <span className={`absolute bottom-0 left-0 w-full h-1 bg-blue-600 transform transition-transform duration-300 ${isActive(link.path) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                  }`}></span>
-              </Link>
-            ))}
-          </div>
+          {/* Navigation Links - hide for admins */}
+          {!isAdmin && (
+            <div className={`hidden md:flex items-center space-x-1 ${user ? 'mx-auto' : 'ml-6'}`}>
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`px-4 py-5 transition-all duration-200 font-medium relative group ${isActive(link.path)
+                    ? 'text-blue-600'
+                    : 'text-gray-700 hover:text-blue-600'
+                    }`}
+                >
+                  {link.title}
+                  <span className={`absolute bottom-0 left-0 w-full h-1 bg-blue-600 transform transition-transform duration-300 ${isActive(link.path) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                    }`}></span>
+                </Link>
+              ))}
+            </div>
+          )}
 
           {title && <div className="text-xl font-semibold">{title}</div>}
+
+          {/* Login success banner (top-right) */}
+          {showLoginSuccess && (
+            <div className="absolute top-2 right-2 bg-blue-900 text-white text-sm px-4 py-2 rounded-md shadow-lg animate-fade-in-down">
+              Successfully logged in
+            </div>
+          )}
 
           {/* Mobile Menu Button */}
           <button
@@ -189,10 +245,13 @@ const Navbar = ({ title }) => {
                     className={`transition-colors duration-200 ${isRequestsPage
                       ? 'text-blue-600 font-medium border-b-2 border-blue-600 pb-1'
                       : 'hover:text-blue-600 hover:border-b-2 hover:border-blue-600 pb-1'
-                      }`}
+                      } relative`}
                     to={'/requests'}
                   >
                     My Requests
+                    <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs leading-none px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                      {requestCount}
+                    </span>
                   </Link>
                   <p> | </p>
                 </>
@@ -259,7 +318,7 @@ const Navbar = ({ title }) => {
             </div>
 
             <div className="space-y-3">
-              {navLinks.map((link) => (
+              {!isAdmin && navLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
@@ -297,10 +356,13 @@ const Navbar = ({ title }) => {
                     className={`block px-4 py-2 rounded-lg transition-colors ${isRequestsPage
                       ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                      }`}
+                      } relative`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     My Requests
+                    <span className="absolute top-1 right-3 bg-red-500 text-white text-xs leading-none px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                      {requestCount}
+                    </span>
                   </Link>
                   <button
                     onClick={() => {

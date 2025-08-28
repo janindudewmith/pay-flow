@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "projects": [
+    {
+      "name": "pay-flow-backend",
+      "root": "backend"
+    },
+    {
+      "name": "pay-flow-frontend", 
+      "root": "frontend"
+    }
+  ],
+  "buildCommand": "npm install",
+  "installCommand": "npm install",
+  "framework": null
+}

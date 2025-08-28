@@ -55,12 +55,24 @@ const App = () => {
     const otpSentThisSession = sessionStorage.getItem('otpSentThisSession') === 'true';
 
     if (isSignedIn && user && !otpVerified && !otpSentThisSession && !isVerifying) {
-      fetch('http://localhost:5000/api/otp/send', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://new-backend-hashans-projects-a831d48a.vercel.app';
+      console.log('Sending OTP request to:', apiUrl);
+      console.log('User email:', user.primaryEmailAddress.emailAddress);
+      
+      fetch(`${apiUrl}/api/otp/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: user.primaryEmailAddress.emailAddress }),
       })
-        .then(() => {
+        .then((response) => {
+          console.log('OTP response status:', response.status);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log('OTP response data:', data);
           setOtpSent(true);
           // Mark that OTP was sent in this session
           sessionStorage.setItem('otpSentThisSession', 'true');

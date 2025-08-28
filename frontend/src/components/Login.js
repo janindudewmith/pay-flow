@@ -35,7 +35,9 @@ const Login = () => {
   };
 
   if (showOTP) {
-    return <OTPVerification email={email} />;
+    return <OTPVerification email={email} onVerificationSuccess={() => {
+      window.dispatchEvent(new Event('login-success'));
+    }} />;
   }
 
   return (

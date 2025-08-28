@@ -26,6 +26,7 @@ const LoginForm = () => {
         setShowOTP(true);
       } else {
         // Handle regular login success
+        window.dispatchEvent(new Event('login-success'));
         navigate('/dashboard');
       }
     } catch (error) {
@@ -37,6 +38,7 @@ const LoginForm = () => {
 
   const handleOTPVerification = async () => {
     setShowOTP(false);
+    window.dispatchEvent(new Event('login-success'));
     navigate('/dashboard');
   };
 

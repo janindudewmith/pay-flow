@@ -14,9 +14,11 @@ const Navbar = ({ title }) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showLoginSuccess, setShowLoginSuccess] = useState(false);
   const modalRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const firstModalLinkRef = useRef(null);
+  const hasShownForThisSessionRef = useRef(false);
   const isRequestsPage = location.pathname === '/requests';
   const isAdminLoginPage = location.pathname === '/admin-login';
 
@@ -33,6 +35,25 @@ const Navbar = ({ title }) => {
   useEffect(() => {
     checkAdminStatus();
   }, [location.pathname, checkAdminStatus]);
+
+  // Listen for explicit login success events (e.g., admin login)
+  useEffect(() => {
+    const onLoginSuccess = () => {
+      setShowLoginSuccess(true);
+      window.setTimeout(() => setShowLoginSuccess(false), 3000);
+    };
+    window.addEventListener('login-success', onLoginSuccess);
+    return () => window.removeEventListener('login-success', onLoginSuccess);
+  }, []);
+
+  // Show banner when Clerk user just signed in (first time this session)
+  useEffect(() => {
+    if (user && !hasShownForThisSessionRef.current && !isAdmin) {
+      hasShownForThisSessionRef.current = true;
+      setShowLoginSuccess(true);
+      window.setTimeout(() => setShowLoginSuccess(false), 3000);
+    }
+  }, [user, isAdmin]);
 
   // Fetch current user's request count
   useEffect(() => {
@@ -193,6 +214,13 @@ const Navbar = ({ title }) => {
           )}
 
           {title && <div className="text-xl font-semibold">{title}</div>}
+
+          {/* Login success banner (top-right) */}
+          {showLoginSuccess && (
+            <div className="absolute top-2 right-2 bg-blue-900 text-white text-sm px-4 py-2 rounded-md shadow-lg animate-fade-in-down">
+              Successfully logged in
+            </div>
+          )}
 
           {/* Mobile Menu Button */}
           <button

@@ -33,7 +33,9 @@ const AdminLogin = () => {
       const result = await login(email, password, role);
 
       if (result.success) {
-        // Redirect based on role without showing toast
+        // Notify globally to show header banner, then redirect
+        window.dispatchEvent(new Event('login-success'));
+        // Redirect based on role
         if (role === 'department_head') {
           navigate('/department/dashboard');
         } else if (role === 'finance_officer') {

@@ -137,3 +137,6 @@ process.on('unhandledRejection', (err) => {
   // Close server & exit process
   server.close(() => process.exit(1));
 });
+
+// Add at the end of server.js
+export default app;

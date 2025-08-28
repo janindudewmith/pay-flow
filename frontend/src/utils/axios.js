@@ -1,8 +1,12 @@
 import axios from 'axios';
 import { useAuth } from '@clerk/clerk-react';
 
+// Get the API URL from environment variables, fallback to localhost for development
+// For Vercel deployment, we use relative path '/api' which gets rewritten to the backend
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 const api = axios.create({
-  baseURL: 'http://localhost:5000', // Your backend server URL
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -63,7 +67,7 @@ export const getApiWithToken = async () => {
 
     // Clone the api instance
     const authenticatedApi = axios.create({
-      baseURL: 'http://localhost:5000',
+      baseURL: API_URL,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': token ? `Bearer ${token}` : ''

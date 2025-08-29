@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AppContextProvider } from './context/AppContext.jsx'
 import {ClerkProvider} from '@clerk/clerk-react'
 import { OtpProvider } from './context/OtpContext.jsx'
+import { ThemeProvider } from './context/ThemeContext.jsx'
 
 // Import your Publishable Key
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
@@ -19,7 +20,9 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AppContextProvider>
         <OtpProvider>
-          <App />
+          <ThemeProvider>
+            <App />
+          </ThemeProvider>
         </OtpProvider>
       </AppContextProvider>
     </BrowserRouter>

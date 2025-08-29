@@ -673,7 +673,9 @@ export const generateFormPdf = async (req, res) => {
       const pdfPath = await pdfService.generatePdf(
         patchedFormData,
         form.formType,
-        form.submittedBy
+        form.submittedBy,
+        (form.status || 'pending_hod_approval'),
+        form.approvalDetails || null
       );
 
       // Check if the file exists
@@ -736,7 +738,8 @@ export const generatePdfFromData = async (req, res) => {
         {
           fullName: user?.fullName || req.body.fullName || 'User',
           email: user?.email || req.body.email || 'user@example.com'
-        }
+        },
+        'pending_hod_approval'
       );
 
       // Check if the file exists

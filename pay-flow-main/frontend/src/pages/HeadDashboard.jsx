@@ -59,39 +59,54 @@ const HeadDashboard = () => {
   const adminEmail = adminInfo?.email;
   const adminName = adminInfo?.name;
 
+  // Canonical department head names
+  const departmentHeadByCode = {
+    EIE: 'Dr. Chathura Senevirathne',
+    CEE: 'Dr. T.N. Wickramarachchi',
+    MME: 'Dr. B. Annasiwaththa'
+  };
+
   const userDepartment = adminDepartment || (user ? getDepartmentFromEmail(user.primaryEmailAddress?.emailAddress) : null);
 
   // Department head info
   const [departmentInfo, setDepartmentInfo] = useState({
     name: 'Electrical & Information Engineering',
     code: 'eie',
-    head: 'Dr. Rajitha Udawalpola'
+    head: 'Dr. Chathura Senevirathne'
   });
 
   // Update department info based on admin department or user's email
   useEffect(() => {
     if (userDepartment) {
+      const canonicalHead = departmentHeadByCode[userDepartment] || 'Department Head';
+
+      // Update localStorage adminInfo if stale
+      if (adminInfo && adminInfo.department === userDepartment && adminInfo.name !== canonicalHead) {
+        const updated = { ...adminInfo, name: canonicalHead };
+        localStorage.setItem('adminInfo', JSON.stringify(updated));
+      }
+
       if (userDepartment === 'EIE') {
         setDepartmentInfo({
           name: 'Electrical & Information Engineering',
           code: 'eie',
-          head: adminName || 'Dr. Rajitha Udawalpola'
+          head: canonicalHead
         });
       } else if (userDepartment === 'CEE') {
         setDepartmentInfo({
           name: 'Civil & Environmental Engineering',
           code: 'cee',
-          head: adminName || 'Dr. T.N. Wickramarachchi'
+          head: canonicalHead
         });
       } else if (userDepartment === 'MME') {
         setDepartmentInfo({
           name: 'Mechanical & Manufacturing Engineering',
           code: 'mme',
-          head: adminName || 'Dr. B. Annasiwaththa'
+          head: canonicalHead
         });
       }
     }
-  }, [userDepartment, adminName]);
+  }, [userDepartment]);
 
   // Check for refresh parameter in URL
   useEffect(() => {

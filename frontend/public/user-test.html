@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 5px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>User API Test</h1>
+    
+    <div>
+        <button id="testEndpoint">Test API Endpoint</button>
+        <button id="testCreateUser">Create User</button>
+    </div>
+    
+    <h2>Response:</h2>
+    <pre id="response">No response yet</pre>
+    
+    <script>
+        document.getElementById('testEndpoint').addEventListener('click', async () => {
+            const responseEl = document.getElementById('response');
+            responseEl.textContent = 'Testing API endpoint...';
+            
+            try {
+                // Test the test endpoint first
+                const response = await fetch('http://localhost:5000/api/users/test');
+                const data = await response.json();
+                responseEl.textContent = 'Test endpoint response:\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                responseEl.textContent = 'Error: ' + error.message;
+            }
+        });
+        
+        document.getElementById('testCreateUser').addEventListener('click', async () => {
+            const responseEl = document.getElementById('response');
+            responseEl.textContent = 'Creating test user...';
+            
+            try {
+                const testUser = {
+                    clerkId: 'test-user-' + Date.now(),
+                    email: 'test' + Date.now() + '@example.com',
+                    fullName: 'Test User',
+                    firstName: 'Test',
+                    lastName: 'User',
+                    profileImageUrl: 'https://example.com/image.jpg'
+                };
+                
+                responseEl.textContent = 'Sending request to: http://localhost:5000/api/users/create-update\n';
+                responseEl.textContent += 'With data: ' + JSON.stringify(testUser, null, 2);
+                
+                const response = await fetch('http://localhost:5000/api/users/create-update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(testUser)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}, URL: ${response.url}`);
+                }
+                
+                const data = await response.json();
+                responseEl.textContent = 'Create user response:\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                responseEl.textContent = 'Error: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html> 

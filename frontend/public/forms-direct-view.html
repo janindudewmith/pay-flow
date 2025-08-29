@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Forms Viewer</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto p-4 max-w-4xl">
+        <div class="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 text-white p-6 rounded-lg shadow-lg mb-6">
+            <h1 class="text-2xl font-bold">PayFlow Direct Forms Viewer</h1>
+            <p class="text-sm opacity-80 mt-1">Bypass frontend to directly view forms</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 class="text-xl font-semibold mb-4">Enter Your User ID</h2>
+            <div class="flex mb-4">
+                <input id="userId" type="text" value="user_2xMtfrtBNYseM6K3jTYjDYzNcZD" class="flex-1 p-2 border rounded mr-2" placeholder="Your Clerk user ID">
+                <button id="fetchForms" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Fetch Forms</button>
+            </div>
+            <div class="text-sm text-gray-600">
+                <p>Default: user_2xMtfrtBNYseM6K3jTYjDYzNcZD</p>
+            </div>
+        </div>
+
+        <div id="loading" class="hidden text-center p-10">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p class="mt-2 text-gray-600">Loading forms...</p>
+        </div>
+
+        <div id="forms-container" class="hidden">
+            <h2 class="text-xl font-semibold mb-4">Your Forms</h2>
+            <div id="forms-list" class="space-y-4">
+                <!-- Forms will be displayed here -->
+            </div>
+        </div>
+
+        <div id="error-message" class="hidden bg-red-100 text-red-800 p-4 rounded mb-6">
+        </div>
+
+        <div id="no-forms" class="hidden text-center p-10">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <p class="mt-2 text-gray-600">No forms found for this user</p>
+            <button id="createForm" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Create Test Form</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userIdInput = document.getElementById('userId');
+            const fetchButton = document.getElementById('fetchForms');
+            const createButton = document.getElementById('createForm');
+            const loadingEl = document.getElementById('loading');
+            const formsContainerEl = document.getElementById('forms-container');
+            const formsListEl = document.getElementById('forms-list');
+            const errorMessageEl = document.getElementById('error-message');
+            const noFormsEl = document.getElementById('no-forms');
+
+            fetchButton.addEventListener('click', fetchForms);
+            createButton.addEventListener('click', createTestForm);
+
+            // Fetch forms for the user ID
+            async function fetchForms() {
+                const userId = userIdInput.value.trim();
+                if (!userId) {
+                    showError('Please enter a user ID');
+                    return;
+                }
+
+                // Show loading, hide other elements
+                loadingEl.classList.remove('hidden');
+                formsContainerEl.classList.add('hidden');
+                errorMessageEl.classList.add('hidden');
+                noFormsEl.classList.add('hidden');
+
+                try {
+                    // First try to get forms through the normal API
+                    const response = await fetch(`http://localhost:5000/api/forms/debug/all-forms?userId=${userId}`);
+                    const data = await response.json();
+
+                    // Hide loading
+                    loadingEl.classList.add('hidden');
+
+                    if (data.success && data.data && data.data.length > 0) {
+                        // Display forms
+                        formsListEl.innerHTML = data.data.map(form => generateFormHtml(form)).join('');
+                        formsContainerEl.classList.remove('hidden');
+                    } else {
+                        // No forms found
+                        noFormsEl.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('Error fetching forms:', error);
+                    showError(`Error fetching forms: ${error.message}`);
+                    loadingEl.classList.add('hidden');
+                }
+            }
+
+            // Create a test form for the user
+            async function createTestForm() {
+                const userId = userIdInput.value.trim();
+                if (!userId) {
+                    showError('Please enter a user ID');
+                    return;
+                }
+
+                // Show loading, hide other elements
+                loadingEl.classList.remove('hidden');
+                formsContainerEl.classList.add('hidden');
+                errorMessageEl.classList.add('hidden');
+                noFormsEl.classList.add('hidden');
+
+                try {
+                    // Use the emergency endpoint to create a form
+                    const response = await fetch('http://localhost:5000/api/forms/emergency-create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            userId: userId
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert('Emergency test form created successfully! Form ID: ' + data.formId);
+                        // Fetch forms again to show the new one
+                        fetchForms();
+                    } else {
+                        showError(`Error creating form: ${data.message}`);
+                        loadingEl.classList.add('hidden');
+                    }
+                } catch (error) {
+                    console.error('Error creating form:', error);
+                    showError(`Error creating form: ${error.message}`);
+                    loadingEl.classList.add('hidden');
+                }
+            }
+
+            // Show error message
+            function showError(message) {
+                errorMessageEl.textContent = message;
+                errorMessageEl.classList.remove('hidden');
+            }
+
+            // Generate HTML for a form
+            function generateFormHtml(form) {
+                const statusColorMap = {
+                    pending_hod_approval: 'yellow',
+                    pending_finance_approval: 'blue',
+                    approved: 'green',
+                    rejected: 'red',
+                    cancelled: 'gray'
+                };
+
+                const statusColor = statusColorMap[form.status] || 'gray';
+
+                return `
+                    <div class="bg-white border rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                        <div class="p-4 border-b">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-semibold">${form.formType.replace('_', ' ').toUpperCase()}</h3>
+                                    <p class="text-sm text-gray-600">ID: ${form._id.substring(0, 8)}...</p>
+                                </div>
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${statusColor}-100 text-${statusColor}-800">
+                                    ${form.status.replace(/_/g, ' ').toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-xs text-gray-500">Submitted By</p>
+                                    <p class="text-sm">${form.submittedBy?.fullName || 'Unknown'}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Amount</p>
+                                    <p class="text-sm">Rs. ${form.formData?.basicInfo?.amountRs || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Date Submitted</p>
+                                    <p class="text-sm">${new Date(form.createdAt).toLocaleDateString()}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Department</p>
+                                    <p class="text-sm">${form.formData?.basicInfo?.department || form.submittedBy?.department || 'N/A'}</p>
+                                </div>
+                            </div>
+                            <div class="pt-2 border-t">
+                                <p class="text-xs text-gray-500">Reason</p>
+                                <p class="text-sm">${form.formData?.basicInfo?.reasonForRequest || 'No reason provided'}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Auto-fetch forms on page load
+            fetchForms();
+        });
+    </script>
+</body>
+</html> 

@@ -10,7 +10,7 @@ const Navbar = ({ title }) => {
   const { user } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAdmin, adminRole, adminName, logout: adminLogout, checkAdminStatus } = useAdminAuth();
+  const { isAdmin, adminRole, adminDepartment, adminName, logout: adminLogout, checkAdminStatus } = useAdminAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -21,6 +21,16 @@ const Navbar = ({ title }) => {
   const isAdminLoginPage = location.pathname === '/admin-login';
 
   const [requestCount, setRequestCount] = useState(0);
+
+  // Canonical department head names for display in navbar
+  const canonicalHeadByDept = {
+    EIE: 'Dr. Chathura Senevirathne',
+    CEE: 'Dr. T.N. Wickramarachchi',
+    MME: 'Dr. B. Annasiwaththa'
+  };
+  const displayAdminName = (isAdmin && adminRole === 'department_head')
+    ? (canonicalHeadByDept[adminDepartment] || adminName)
+    : adminName;
 
   // Listen for global event to open the Request New Payment modal
   useEffect(() => {
@@ -253,7 +263,7 @@ const Navbar = ({ title }) => {
                   <p> | </p>
                 </>
               )}
-              <p className="max-sm:hidden">Hi, {adminName}</p>
+              <p className="max-sm:hidden">Hi, {displayAdminName}</p>
               <button
                 onClick={adminLogout}
                 className="ml-4 bg-blue-600 text-white px-6 sm:px-9 py-2 rounded-full border border-transparent transition-all duration-200 transform hover:scale-[1.05]"

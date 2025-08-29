@@ -10,13 +10,16 @@ import axios from 'axios';
  */
 export const downloadSubmittedFormPdf = async (formId, token, formType) => {
   try {
+    // Get the API URL from environment variables
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
     // Show loading state
     console.log('Downloading PDF for form:', formId);
 
     // Make GET request to download PDF
     const response = await axios({
       method: 'get',
-      url: `http://localhost:5000/api/forms/${formId}/pdf`,
+      url: `${API_URL}/api/forms/${formId}/pdf`,
       headers: {
         'Authorization': `Bearer ${token}`
       },
@@ -54,6 +57,9 @@ export const downloadSubmittedFormPdf = async (formId, token, formType) => {
  */
 export const generateFormPdf = async (formData, formType, user, token) => {
   try {
+    // Get the API URL from environment variables
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
     // Create form data for PDF generation
     const pdfData = {
       formType,
@@ -65,7 +71,7 @@ export const generateFormPdf = async (formData, formType, user, token) => {
     // Make POST request to download PDF
     const response = await axios({
       method: 'post',
-      url: 'http://localhost:5000/api/forms/generate-pdf',
+      url: `${API_URL}/api/forms/generate-pdf`,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`

@@ -15,10 +15,13 @@ export const submitForm = async (formType, formData, user) => {
 
     console.log('Submitting form with user data:', { email, fullName });
 
+    // Get the API URL from environment variables
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
     // Create a direct axios instance for the request
     const response = await axios({
       method: 'post',
-      url: 'http://localhost:5000/api/forms/submit',
+      url: `${API_URL}/api/forms/submit`,
       headers: {
         'Content-Type': 'application/json',
       },

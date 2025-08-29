@@ -39,7 +39,8 @@ const OTPVerification = ({ email, onSuccess }) => {
     setError('');
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/otp/verify', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const response = await axios.post(`${API_URL}/api/otp/verify`, {
         email,
         otp,
       });
@@ -62,7 +63,7 @@ const OTPVerification = ({ email, onSuccess }) => {
     setError('');
     setLoading(true);
     try {
-      await axios.post('http://localhost:5000/api/otp/send', { email });
+      await axios.post(`${API_URL}/api/otp/send`, { email });
       setTimer(300);
       setOtp('');
       // Update session storage to indicate OTP was sent

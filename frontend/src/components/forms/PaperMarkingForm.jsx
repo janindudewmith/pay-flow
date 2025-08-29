@@ -110,9 +110,10 @@ const PaperMarkingForm = () => {
       };
 
       // Create a direct axios instance with the token
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const response = await axios({
         method: 'post',
-        url: 'http://localhost:5000/api/forms/submit',
+        url: `${API_URL}/api/forms/submit`,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`

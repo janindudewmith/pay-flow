@@ -8,7 +8,8 @@ const OtpModal = ({ email, onVerified, onClose }) => {
 
   const sendOtp = async () => {
     try {
-      await axios.post('http://localhost:5000/api/auth/send-otp', { email });
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      await axios.post(`${API_URL}/api/auth/send-otp`, { email });
       setStep('verify');
       setMessage('OTP sent to your email!');
     } catch (err) {
@@ -18,7 +19,7 @@ const OtpModal = ({ email, onVerified, onClose }) => {
 
   const verifyOtp = async () => {
     try {
-      await axios.post('http://localhost:5000/api/auth/verify-otp', { email, otp });
+      await axios.post(`${API_URL}/api/auth/verify-otp`, { email, otp });
       setMessage('OTP verified successfully!');
       onVerified(); // Notify parent component
     } catch (err) {

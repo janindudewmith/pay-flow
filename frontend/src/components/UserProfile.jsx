@@ -29,10 +29,11 @@ const UserProfile = () => {
           };
 
           console.log('Saving user data to database:', userData);
-          console.log('Making API request to: http://localhost:5000/api/users/create-update');
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          console.log('Making API request to:', `${API_URL}/api/users/create-update`);
 
           // Use fetch API instead of axios as an alternative
-          const response = await fetch('http://localhost:5000/api/users/create-update', {
+          const response = await fetch(`${API_URL}/api/users/create-update`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

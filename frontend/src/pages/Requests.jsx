@@ -27,9 +27,10 @@ const Requests = () => {
 
         // API request to fetch forms
         console.log('Making API request to fetch forms');
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
         const response = await axios({
           method: 'get',
-          url: 'http://localhost:5000/api/forms/my-forms',
+          url: `${API_URL}/api/forms/my-forms`,
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`

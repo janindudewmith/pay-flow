@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Form Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2d3748;
+        }
+        .form-item {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 15px;
+        }
+        .form-label {
+            font-weight: bold;
+            color: #4a5568;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .approved {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .rejected {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        #error-message {
+            color: #e53e3e;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        #loading {
+            text-align: center;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 15px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        pre {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            overflow: auto;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Form Debug Display</h1>
+        
+        <div id="loading">Loading form data...</div>
+        <div id="error-message"></div>
+        <div id="form-container" style="display: none;"></div>
+        
+        <div>
+            <button id="fetch-direct">Fetch Form Directly</button>
+            <button id="fetch-all">Fetch All Forms</button>
+        </div>
+        
+        <h2>API Response</h2>
+        <pre id="api-response">No data yet...</pre>
+    </div>
+
+    <script>
+        const formId = '682cb93042a0cccac032a999';
+        const userId = 'user_2dIz62j46tXcnUjGPqH5bHZgWFG';
+        
+        document.getElementById('fetch-direct').addEventListener('click', () => fetchForm(formId));
+        document.getElementById('fetch-all').addEventListener('click', fetchAllForms);
+        
+        // Fetch a specific form by ID
+        async function fetchForm(id) {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error-message');
+            const formContainerEl = document.getElementById('form-container');
+            const apiResponseEl = document.getElementById('api-response');
+            
+            loadingEl.style.display = 'block';
+            errorEl.textContent = '';
+            formContainerEl.style.display = 'none';
+            
+            try {
+                // Mock token with the user ID
+                const mockToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzJkSXo2Mmo0NnRYY25VakdQcUg1YkhaZ1dGRyIsIm5hbWUiOiJUZXN0IFVzZXIiLCJpYXQiOjE1MTYyMzkwMjJ9.1234567890`;
+                
+                const response = await fetch(`http://localhost:5000/api/forms/${id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${mockToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                apiResponseEl.textContent = JSON.stringify(data, null, 2);
+                
+                if (data.success && data.data) {
+                    const form = data.data;
+                    formContainerEl.innerHTML = generateFormHTML(form);
+                    formContainerEl.style.display = 'block';
+                } else {
+                    errorEl.textContent = data.message || 'Failed to retrieve form';
+                }
+            } catch (error) {
+                console.error('Error fetching form:', error);
+                errorEl.textContent = error.message || 'Error fetching form';
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+        
+        // Fetch all forms
+        async function fetchAllForms() {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error-message');
+            const formContainerEl = document.getElementById('form-container');
+            const apiResponseEl = document.getElementById('api-response');
+            
+            loadingEl.style.display = 'block';
+            errorEl.textContent = '';
+            formContainerEl.style.display = 'none';
+            
+            try {
+                // Direct debug route that doesn't require authentication
+                const response = await fetch('http://localhost:5000/api/forms/debug/all-forms', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                apiResponseEl.textContent = JSON.stringify(data, null, 2);
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    formContainerEl.innerHTML = data.data.map(form => generateFormHTML(form)).join('<hr>');
+                    formContainerEl.style.display = 'block';
+                } else {
+                    errorEl.textContent = 'No forms found';
+                }
+            } catch (error) {
+                console.error('Error fetching forms:', error);
+                errorEl.textContent = error.message || 'Error fetching forms';
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+        
+        // Generate HTML for a form
+        function generateFormHTML(form) {
+            const statusClass = 
+                form.status === 'approved' ? 'approved' :
+                form.status === 'rejected' ? 'rejected' : 'pending';
+            
+            return `
+                <div class="form-item">
+                    <div class="form-label">Form ID:</div>
+                    <div>${form._id}</div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label">Form Type:</div>
+                    <div>${form.formType}</div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label">Submitted By:</div>
+                    <div>${form.submittedBy?.fullName || 'Unknown'} (${form.submittedBy?.userId || 'Unknown ID'})</div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label">Status:</div>
+                    <div><span class="status ${statusClass}">${form.status}</span></div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label">Amount:</div>
+                    <div>Rs. ${form.formData?.basicInfo?.amountRs || 'N/A'}</div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label">Submitted On:</div>
+                    <div>${new Date(form.createdAt).toLocaleString()}</div>
+                </div>
+            `;
+        }
+        
+        // Initial load
+        fetchForm(formId);
+    </script>
+</body>
+</html> 

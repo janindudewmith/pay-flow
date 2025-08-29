@@ -23,6 +23,7 @@ import ScrollToTop from './components/ScrollToTop';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import UserOnlyRoute from './components/UserOnlyRoute';
 import LearnMore from './pages/LearnMore';
+import ChatBot from './components/ChatBot';
 
 const App = () => {
   const { isSignedIn, user } = useUser();
@@ -178,6 +179,7 @@ const App = () => {
         pauseOnHover
         theme="colored"
       />
+      <ChatBot />
     </div>
   );
 };

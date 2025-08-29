@@ -30,11 +30,11 @@ const pdfOptions = {
  * @param {Object} user - User information
  * @returns {Promise<String>} - Path to the generated PDF
  */
-export const generatePdf = (formData, formType, user, status = 'DRAFT') => {
+export const generatePdf = (formData, formType, user, status = 'DRAFT', approvals = null) => {
   return new Promise((resolve, reject) => {
     try {
                 // Generate HTML content based on form type
-        const htmlContent = generateHtmlContent(formData, formType, user, status);
+        const htmlContent = generateHtmlContent(formData, formType, user, status, approvals);
 
       // Create a unique filename
       const timestamp = Date.now();
@@ -70,7 +70,27 @@ export const generatePdf = (formData, formType, user, status = 'DRAFT') => {
  * @param {Object} user - User information
  * @returns {String} - HTML content
  */
-const generateHtmlContent = (formData, formType, user, status = 'DRAFT') => {
+const generateHtmlContent = (formData, formType, user, status = 'DRAFT', approvals = null) => {
+  // Derive approval states
+  const normalizedStatus = (status || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+  const hodApproved = Boolean(approvals && approvals.hodApproval && approvals.hodApproval.approvedAt);
+  const hodApprovedAt = approvals && approvals.hodApproval && approvals.hodApproval.approvedAt
+    ? new Date(approvals.hodApproval.approvedAt)
+    : null;
+  const financeApproved = Boolean(approvals && approvals.financeApproval && approvals.financeApproval.approvedAt);
+  const financeApprovedAt = approvals && approvals.financeApproval && approvals.financeApproval.approvedAt
+    ? new Date(approvals.financeApproval.approvedAt)
+    : null;
+
+  const hodIsApproved = hodApproved || normalizedStatus === 'pending_finance_approval' || normalizedStatus === 'approved';
+  const financeIsApproved = financeApproved || normalizedStatus === 'approved';
+  const isRejected = normalizedStatus === 'rejected';
+  const rejectedByFinance = isRejected && hodIsApproved;
+  const rejectedByHod = isRejected && !hodIsApproved;
   // Common header and styling
   const commonHeader = `
     <!DOCTYPE html>
@@ -218,12 +238,46 @@ const generateHtmlContent = (formData, formType, user, status = 'DRAFT') => {
           margin-bottom: 20px;
           vertical-align: top;
           text-align: center;
+          position: relative;
         }
         .signature-line {
           border-top: 2px solid #3498db;
           margin-top: 40px;
           width: 80%;
           display: block;
+        }
+        .seal {
+          position: absolute;
+          top: -10px;
+          right: 20px;
+          width: 90px;
+          height: 90px;
+          border-radius: 50%;
+          border: 3px solid currentColor;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          text-transform: uppercase;
+          font-size: 16px;
+          opacity: 0.9;
+          transform: rotate(-12deg);
+        }
+        .seal-approved {
+          color: #27ae60;
+          background: rgba(39, 174, 96, 0.08);
+        }
+        .seal-pending {
+          color: #e67e22;
+          background: rgba(230, 126, 34, 0.08);
+        }
+        .seal-rejected {
+          color: #c0392b;
+          background: rgba(192, 57, 43, 0.08);
+        }
+        .seal-na {
+          color: #7f8c8d;
+          background: rgba(127, 140, 141, 0.08);
         }
         .footer {
           margin-top: 40px;
@@ -274,6 +328,7 @@ const generateHtmlContent = (formData, formType, user, status = 'DRAFT') => {
         <div class="section-title">Approval Chain</div>
         
         <div class="signature-block">
+          <div class="seal seal-approved">Approved</div>
           <div class="signature-line"></div>
           <div class="signature-title">Applicant</div>
           <div style="font-weight: 600; margin: 10px 0;">${user?.fullName || 'N/A'}</div>
@@ -281,17 +336,19 @@ const generateHtmlContent = (formData, formType, user, status = 'DRAFT') => {
         </div>
         
         <div class="signature-block">
+          <div class="seal ${rejectedByHod ? 'seal-rejected' : (hodIsApproved ? 'seal-approved' : (isRejected ? 'seal-na' : 'seal-pending'))}">${rejectedByHod ? 'Rejected' : (hodIsApproved ? 'Approved' : (isRejected ? 'N/A' : 'Pending'))}</div>
           <div class="signature-line"></div>
           <div class="signature-title">Head of Department</div>
-          <div style="font-weight: 600; margin: 10px 0;">Pending Approval</div>
-          <div style="color: #7f8c8d; font-size: 12px;">Date: </div>
+          <div style="font-weight: 600; margin: 10px 0;">${rejectedByHod ? 'Rejected' : (hodIsApproved ? 'Approved' : (isRejected ? 'Not Applicable' : 'Pending Approval'))}</div>
+          <div style="color: #7f8c8d; font-size: 12px;">Date: ${hodIsApproved && hodApprovedAt ? hodApprovedAt.toLocaleDateString() : ''}</div>
         </div>
         
         <div class="signature-block">
+          <div class="seal ${rejectedByFinance ? 'seal-rejected' : (financeIsApproved ? 'seal-approved' : (isRejected ? 'seal-na' : 'seal-pending'))}">${rejectedByFinance ? 'Rejected' : (financeIsApproved ? 'Approved' : (isRejected ? 'N/A' : 'Pending'))}</div>
           <div class="signature-line"></div>
           <div class="signature-title">Finance Officer</div>
-          <div style="font-weight: 600; margin: 10px 0;">Pending Approval</div>
-          <div style="color: #7f8c8d; font-size: 12px;">Date: </div>
+          <div style="font-weight: 600; margin: 10px 0;">${rejectedByFinance ? 'Rejected' : (financeIsApproved ? 'Approved' : (isRejected ? 'Not Applicable' : 'Pending Approval'))}</div>
+          <div style="color: #7f8c8d; font-size: 12px;">Date: ${financeIsApproved && financeApprovedAt ? financeApprovedAt.toLocaleDateString() : ''}</div>
         </div>
       </div>
       

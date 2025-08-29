@@ -674,7 +674,8 @@ export const generateFormPdf = async (req, res) => {
         patchedFormData,
         form.formType,
         form.submittedBy,
-        form.status || 'PENDING HOD APPROVAL'
+        (form.status || 'pending_hod_approval'),
+        form.approvalDetails || null
       );
 
       // Check if the file exists
@@ -738,7 +739,7 @@ export const generatePdfFromData = async (req, res) => {
           fullName: user?.fullName || req.body.fullName || 'User',
           email: user?.email || req.body.email || 'user@example.com'
         },
-        'PENDING HOD APPROVAL'
+        'pending_hod_approval'
       );
 
       // Check if the file exists

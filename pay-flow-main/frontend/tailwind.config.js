@@ -7,6 +7,10 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Poppins", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", "sans-serif"],
+        display: ["Poppins", "ui-sans-serif", "system-ui", "sans-serif"]
+      },
       colors: {
         dark: {
           50: '#f8fafc',

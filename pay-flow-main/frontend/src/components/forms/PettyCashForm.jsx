@@ -312,15 +312,18 @@ const PettyCashForm = () => {
           >
             {isSubmitting ? 'Submitting...' : submitted ? 'Submitted' : 'Submit'}
           </button>
+          
+          {/* Generate PDF button - always visible */}
+          <button
+            type="button"
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
+            onClick={handleDownloadPDF}
+          >
+            Generate PDF
+          </button>
+          
           {submitted && (
             <>
-              <button
-                type="button"
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-                onClick={handleDownloadPDF}
-              >
-                Download Form
-              </button>
               <button
                 type="button"
                 className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors"

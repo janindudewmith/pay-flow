@@ -229,7 +229,13 @@ const Navbar = ({ title }) => {
                 </>
               )}
               <p className="max-sm:hidden">Hi, {user.firstName + ' ' + user.lastName}</p>
-              <UserButton />
+              <UserButton 
+                appearance={{
+                  elements: {
+                    avatarBox: "w-12 h-12"
+                  }
+                }}
+              />
             </div>
           ) : isAdmin ? (
             <div className="hidden md:flex items-center gap-3">

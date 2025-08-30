@@ -498,6 +498,34 @@ const ViewRequests = () => {
                 </p>
               </div>
 
+              {/* Finance Officer Guidance */}
+              {isFinanceOfficer && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-6 border border-blue-100">
+                  <div className="flex items-start">
+                    <div className="bg-blue-100 p-2 rounded-full mr-3 mt-0.5">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-blue-800 mb-2">Your Role as Finance Officer</h3>
+                      <p className="text-sm text-blue-700 mb-3">
+                        This request has been approved by the department head and is now awaiting your financial review. 
+                        You are responsible for the final approval that will trigger payment processing.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div className="bg-white p-2 rounded border border-blue-200">
+                          <span className="font-medium text-blue-800">✓ Check:</span> Budget availability, policy compliance, documentation completeness
+                        </div>
+                        <div className="bg-white p-2 rounded border border-blue-200">
+                          <span className="font-medium text-blue-800">✓ Verify:</span> Amount calculations, supporting documents, approval chain
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={handleApprove}
@@ -599,19 +627,84 @@ const ViewRequests = () => {
                   </div>
                 )}
 
-                {formData.status === 'pending_finance_approval' && !isFinanceOfficer && (
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-100 flex items-start">
-                    <svg className="w-6 h-6 text-blue-600 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                {/* Approval History */}
+                <div className="mt-6">
+                  <h4 className="font-medium text-gray-800 mb-3 flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                     </svg>
-                    <div>
-                      <h3 className="font-semibold text-blue-800">Approved & Forwarded to Finance</h3>
-                      <p className="text-sm text-gray-600 mt-1">
-                        You have approved this request and it has been forwarded to the Finance Department for final approval and payment processing.
-                      </p>
+                    Approval History
+                  </h4>
+                  
+                  <div className="space-y-3">
+                    {/* HOD Approval */}
+                    <div className="flex items-center p-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-800">Department Head Approval</p>
+                        <p className="text-xs text-gray-600">
+                          {formData.approvalDetails?.hodApproval ? (
+                            <>
+                              Approved by: {formData.approvalDetails.hodApproval.approvedBy} on {formatDate(formData.approvalDetails.hodApproval.approvedAt)}
+                              {formData.approvalDetails.hodApproval.comments && (
+                                <span className="block mt-1">Comments: {formData.approvalDetails.hodApproval.comments}</span>
+                              )}
+                            </>
+                          ) : (
+                            'Pending approval'
+                          )}
+                        </p>
+                      </div>
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        formData.approvalDetails?.hodApproval ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {formData.approvalDetails?.hodApproval ? '✓ Approved' : '⏳ Pending'}
+                      </div>
+                    </div>
+
+                    {/* Finance Approval */}
+                    <div className="flex items-center p-3 bg-green-50 rounded-lg border border-green-100">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-800">Finance Officer Approval</p>
+                        <p className="text-xs text-gray-600">
+                          {formData.approvalDetails?.financeApproval ? (
+                            <>
+                              Approved by: {formData.approvalDetails.financeApproval.approvedBy} on {formatDate(formData.approvalDetails.financeApproval.approvedAt)}
+                              {formData.approvalDetails.financeApproval.comments && (
+                                <span className="block mt-1">Comments: {formData.approvalDetails.financeApproval.comments}</span>
+                              )}
+                            </>
+                          ) : formData.status === 'rejected' && formData.rejectionDetails?.stage === 'finance' ? (
+                            <>
+                              Rejected by: {formData.rejectionDetails.rejectedBy} on {formatDate(formData.rejectionDetails.rejectedAt)}
+                              <span className="block mt-1">Reason: {formData.rejectionDetails.reason}</span>
+                            </>
+                          ) : (
+                            'Awaiting finance review'
+                          )}
+                        </p>
+                      </div>
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        formData.approvalDetails?.financeApproval ? 'bg-green-100 text-green-800' :
+                        formData.status === 'rejected' && formData.rejectionDetails?.stage === 'finance' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {formData.approvalDetails?.financeApproval ? '✓ Approved' :
+                         formData.status === 'rejected' && formData.rejectionDetails?.stage === 'finance' ? '❌ Rejected' :
+                         '⏳ Pending'}
+                      </div>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           )}

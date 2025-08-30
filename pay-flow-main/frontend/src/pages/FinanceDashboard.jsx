@@ -496,7 +496,7 @@ const FinanceDashboard = () => {
               </div>
               <div className="bg-blue-100 p-3 rounded-full">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-14 0 9 9 0 0114 0z"></path>
                 </svg>
               </div>
             </div>
@@ -546,6 +546,125 @@ const FinanceDashboard = () => {
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-2">Total processed value</p>
+          </div>
+        </div>
+
+        {/* Recent Department Activity */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8">
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
+            <h2 className="text-xl font-bold text-white flex items-center">
+              <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+              </svg>
+              Recent Department Activity
+            </h2>
+            <p className="text-indigo-100 text-sm mt-1">Latest form submissions and status updates across all departments</p>
+          </div>
+
+          <div className="p-6">
+            {requests.length === 0 ? (
+              <div className="text-center py-8">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No recent activity</h3>
+                <p className="mt-1 text-sm text-gray-500">Forms will appear here as they are submitted</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {requests.slice(0, 8).map((request) => (
+                  <div key={request.id} className="flex items-center p-4 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors duration-200">
+                    {/* User Avatar */}
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center mr-4">
+                      <span className="text-white font-semibold text-sm">
+                        {request.formData.requestorName?.charAt(0) || 
+                         request.formData.officerName?.charAt(0) || 
+                         request.formData.nameOfApplicant?.charAt(0) || 
+                         request.formData.examinerName?.charAt(0) || 
+                         'U'}
+                      </span>
+                    </div>
+
+                    {/* Activity Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            <span className="font-semibold">
+                              {request.formData.requestorName ||
+                               request.formData.officerName ||
+                               request.formData.nameOfApplicant ||
+                               request.formData.examinerName ||
+                               'Unknown User'}
+                            </span>
+                            {' submitted a '}
+                            <span className="text-blue-600 font-medium">{request.formType}</span>
+                            {' request'}
+                          </p>
+                          <div className="flex items-center mt-1 text-xs text-gray-500">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            {formatDate(request.submittedAt)}
+                            <span className="mx-2">•</span>
+                            <span className="font-medium">Amount: Rs. {request.amount.toLocaleString()}</span>
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="flex-shrink-0 ml-4">
+                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            request.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                            request.status === 'approved' ? 'bg-green-100 text-green-800 border border-green-200' :
+                            'bg-red-100 text-red-800 border border-red-200'
+                          }`}>
+                            {request.status === 'pending' ? '⏳ Pending' :
+                             request.status === 'approved' ? '✅ Approved (To Finance)' :
+                             '❌ Rejected'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Department Info */}
+                      <div className="flex items-center mt-2 text-xs text-gray-500">
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                        {request.department}
+                        <span className="mx-2">•</span>
+                        <span>ID: {request.id}</span>
+                      </div>
+                    </div>
+
+                    {/* Quick Action */}
+                    <div className="flex-shrink-0 ml-4">
+                      <Link
+                        to={`/finance/requests/${request.id}`}
+                        className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                      >
+                        <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        Review
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* View All Activity Link */}
+            {requests.length > 8 && (
+              <div className="mt-6 text-center">
+                <button className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                  View All Activity ({requests.length} total)
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -835,6 +954,85 @@ const FinanceDashboard = () => {
               <h3 className="font-medium text-gray-800">Payment Processing</h3>
             </div>
             <p className="text-gray-600">After your approval, the payment will be processed according to the financial procedures.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Finance Officer Actions Guide */}
+      <div className="border border-green-100 bg-green-50 rounded-xl shadow-lg p-6 mt-6">
+        <div className="flex items-center mb-3">
+          <div className="bg-green-100 p-2 rounded-full mr-3">
+            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-green-800">What You Can Do</h2>
+        </div>
+        <p className="text-sm text-gray-700 mb-4">
+          As a Finance Officer, you have several options for handling each payment request:
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="bg-white p-4 rounded-lg border border-green-100">
+            <div className="flex items-center mb-2">
+              <div className="bg-blue-100 p-1.5 rounded-full mr-2">
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+              </div>
+              <h3 className="font-medium text-gray-800">Review & Decide</h3>
+            </div>
+            <p className="text-gray-600">Click "Review & Decide" to see full form details and make an informed decision.</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-green-100">
+            <div className="flex items-center mb-2">
+              <div className="bg-green-100 p-1.5 rounded-full mr-2">
+                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <h3 className="font-medium text-gray-800">Quick Approve</h3>
+            </div>
+            <p className="text-gray-600">Use "Quick Approve" for straightforward requests that meet all requirements.</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-green-100">
+            <div className="flex items-center mb-2">
+              <div className="bg-red-100 p-1.5 rounded-full mr-2">
+                <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </div>
+              <h3 className="font-medium text-gray-800">Quick Reject</h3>
+            </div>
+            <p className="text-gray-600">Use "Quick Reject" when you can immediately identify issues that prevent approval.</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-green-100">
+            <div className="flex items-center mb-2">
+              <div className="bg-purple-100 p-1.5 rounded-full mr-2">
+                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <h3 className="font-medium text-gray-800">Download PDF</h3>
+            </div>
+            <p className="text-gray-600">Download approved forms as PDFs for record-keeping and processing.</p>
+          </div>
+        </div>
+        
+        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-start">
+            <svg className="w-5 h-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <div>
+              <h4 className="font-medium text-yellow-800">Important Notes:</h4>
+              <ul className="text-sm text-yellow-700 mt-1 space-y-1">
+                <li>• Always review the full form details before making a decision</li>
+                <li>• Provide clear reasons when rejecting requests</li>
+                <li>• Approved requests will be processed for payment</li>
+                <li>• You can download approved forms as PDFs for records</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

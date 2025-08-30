@@ -84,6 +84,9 @@ const FinanceDashboard = () => {
         // Transform the data to match the expected format
         const transformedData = formsData.map(form => {
           console.log('Processing form:', form);
+          console.log('Form status:', form.status);
+          console.log('Form approvalDetails:', form.approvalDetails);
+          console.log('Form rejectionDetails:', form.rejectionDetails);
 
           // Extract the amount from formData based on form type
           let amount = 0;
@@ -121,6 +124,8 @@ const FinanceDashboard = () => {
           } else if (form.status === 'rejected' && form.rejectionDetails?.stage === 'finance') {
             status = 'rejected';
           }
+          
+          console.log('Final assigned status:', status);
 
           return {
             id: form._id,
@@ -146,6 +151,8 @@ const FinanceDashboard = () => {
 
         // Filter out forms with status 'other'
         const validForms = transformedData.filter(req => req.status !== 'other');
+        console.log('FinanceDashboard: Valid forms (excluding "other" status):', validForms);
+        console.log('FinanceDashboard: Forms with "other" status:', transformedData.filter(req => req.status === 'other'));
 
         // Calculate stats
         const pendingCount = validForms.filter(req => req.status === 'pending').length;
@@ -522,6 +529,116 @@ const FinanceDashboard = () => {
             <p className="text-xs text-gray-500 mt-2">Total processed value</p>
           </div>
         </div>
+
+        {/* Recent Department Activity */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8">
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
+            <h2 className="text-xl font-bold text-white flex items-center">
+              <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+              </svg>
+              Recent Department Activity
+            </h2>
+            <p className="text-indigo-100 text-sm mt-1">Latest form submissions and status updates across all departments</p>
+          </div>
+
+          <div className="p-6">
+            {(() => {
+              const validRequests = requests.filter(req => req.status !== 'other');
+              return validRequests.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No recent activity</h3>
+                  <p className="mt-1 text-sm text-gray-500">Forms will appear here as they are submitted</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {validRequests.slice(0, 8).map((request) => (
+                  <div key={request.id} className="flex items-center p-4 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors duration-200">
+                    {/* User Avatar */}
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center mr-4">
+                      <span className="text-white font-semibold text-sm">
+                        {request.formData.requestorName?.charAt(0) || 
+                         request.formData.officerName?.charAt(0) || 
+                         request.formData.nameOfApplicant?.charAt(0) || 
+                         request.formData.examinerName?.charAt(0) || 
+                         'U'}
+                      </span>
+                    </div>
+
+                    {/* Activity Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            <span className="font-semibold">
+                              {request.formData.requestorName ||
+                               request.formData.officerName ||
+                               request.formData.nameOfApplicant ||
+                               request.formData.examinerName ||
+                               'Unknown User'}
+                            </span>
+                            {' submitted a '}
+                            <span className="text-blue-600 font-medium">{request.formType}</span>
+                            {' request'}
+                          </p>
+                          <div className="flex items-center mt-1 text-xs text-gray-500">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            {formatDate(request.submittedAt)}
+                            <span className="mx-2">•</span>
+                            <span className="font-medium">Amount: Rs. {request.amount.toLocaleString()}</span>
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="flex-shrink-0 ml-4">
+                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            request.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                            request.status === 'approved' ? 'bg-green-100 text-green-800 border border-green-200' :
+                            'bg-red-100 text-red-800 border border-red-200'
+                          }`}>
+                            {request.status === 'pending' ? '⏳ Pending' :
+                             request.status === 'approved' ? '✅ Approved (To Finance)' :
+                             '❌ Rejected'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Department Info */}
+                      <div className="flex items-center mt-2 text-xs text-gray-500">
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                        {request.department}
+                        <span className="mx-2">•</span>
+                        <span>ID: {request.id}</span>
+                      </div>
+                    </div>
+
+                    {/* Quick Action */}
+                    <div className="flex-shrink-0 ml-4">
+                      <Link
+                        to={`/finance/requests/${request.id}`}
+                        className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                      >
+                        <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        Review
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        )}
 
         {/* Filters */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
